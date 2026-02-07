@@ -11,14 +11,12 @@ import PracticeToolbar from "@/components/Practice/PracticeToolbar";
 import FeedbackOverlay from "@/components/Practice/FeedbackOverlay";
 import LoopControls from "@/components/Practice/LoopControls";
 import RecordingTimeline from "@/components/Recording/RecordingTimeline";
-import SightReadingView from "@/components/SightReading/SightReadingView";
 import StaffNotation from "@/components/StaffNotation/StaffNotation";
 import SessionDashboard from "@/components/Stats/SessionDashboard";
 import { useMidiInput } from "@/lib/hooks/useMidiInput";
 import { usePianoSynth } from "@/lib/hooks/usePianoSynth";
 import { usePracticeSession } from "@/lib/hooks/usePracticeSession";
 import { useSessionStats } from "@/lib/hooks/useSessionStats";
-import { useSightReading } from "@/lib/hooks/useSightReading";
 import { useAppStore } from "@/lib/state/useAppStore";
 import { getMeasureData } from "@/lib/mozart/measureData";
 import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
@@ -38,6 +36,7 @@ export default function Home() {
   const tempo = useAppStore((s) => s.tempo);
   const practiceMode = useAppStore((s) => s.practiceMode);
   const handMode = useAppStore((s) => s.handMode);
+  const sightReadMode = useAppStore((s) => s.sightReadMode);
   const selectBar = useAppStore((s) => s.selectBar);
 
   const {
@@ -49,21 +48,10 @@ export default function Home() {
     onLoopComplete,
   } = usePracticeSession(noteOn, noteOff, recordAttempt);
 
-  const {
-    sightReadingSession,
-    countdown,
-    isActive: isSightReadingActive,
-    startSightReading,
-    clearSightReading,
-    evaluateNote: sightReadingEvaluateNote,
-    completeBar: sightReadingCompleteBar,
-  } = useSightReading();
-
   // MIDI input uses practice note handlers for evaluation
   const handleMidiNoteOn = useCallback((note: number, velocity: number) => {
     onPracticeNoteOn(note, velocity);
-    if (isSightReadingActive) sightReadingEvaluateNote(note);
-  }, [onPracticeNoteOn, isSightReadingActive, sightReadingEvaluateNote]);
+  }, [onPracticeNoteOn]);
 
   const handleMidiNoteOff = useCallback((note: number) => {
     onPracticeNoteOff(note);
@@ -100,8 +88,7 @@ export default function Home() {
 
   const handleLoopBoundary = useCallback((loopCount: number) => {
     onLoopComplete();
-    if (isSightReadingActive) sightReadingCompleteBar();
-  }, [onLoopComplete, isSightReadingActive, sightReadingCompleteBar]);
+  }, [onLoopComplete]);
 
   const handleSelectMeasure = useCallback((measureId: number) => {
     const idx = measureIds.indexOf(measureId);
@@ -132,7 +119,6 @@ export default function Home() {
       {/* Left sidebar — practice toolbar */}
       <aside className="sticky top-0 flex h-screen w-40 shrink-0 flex-col items-start gap-4 overflow-y-auto border-r border-neutral-800 bg-neutral-950 px-3 py-6">
         <PracticeToolbar
-          onStartSightReading={startSightReading}
           onOpenStats={() => setShowStats(true)}
         />
         <LoopControls />
@@ -150,23 +136,8 @@ export default function Home() {
         <DiceRoller />
         <MeasureGrid />
 
-        {/* Sight-reading overlay */}
-        {sightReadingSession && (
-          <SightReadingView
-            session={sightReadingSession}
-            countdown={countdown}
-            playbackPositionMs={playbackPositionMs}
-            tempoScale={tempoScale}
-            feedbackMap={mergedFeedbackMap}
-            pressedNotes={pressedNotes}
-            onRetry={startSightReading}
-            onNewPiece={startSightReading}
-            onClose={clearSightReading}
-          />
-        )}
-
-        {/* Staff notation when a bar is selected (non-sight-reading) */}
-        {!sightReadingSession && staffMeasureData && (
+        {/* Staff notation when a bar is selected */}
+        {staffMeasureData && (
           <StaffNotation
             rightHand={handMode === "left" ? [] : staffMeasureData.rightHand}
             leftHand={handMode === "right" ? [] : staffMeasureData.leftHand}
@@ -179,7 +150,7 @@ export default function Home() {
           />
         )}
 
-        <TeachingPanel />
+        {!sightReadMode && <TeachingPanel />}
 
         {/* Feedback overlay */}
         <FeedbackOverlay lastLoopResult={lastLoopResult} />
@@ -201,10 +172,12 @@ export default function Home() {
           <TempoSlider />
         </div>
 
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Teaching</span>
-          <PianoKeyboard activeNotes={activeNotes} expectedNotes={expectedNotes} fingeringMap={fingeringMap} leftHandMidis={leftHandMidis} />
-        </div>
+        {!sightReadMode && (
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Teaching</span>
+            <PianoKeyboard activeNotes={activeNotes} expectedNotes={expectedNotes} fingeringMap={fingeringMap} leftHandMidis={leftHandMidis} />
+          </div>
+        )}
 
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Your playing</span>

@@ -18,6 +18,7 @@ interface AppState {
   autoSpeedUp: boolean;
   consecutiveGoodLoops: number;
   targetTempo: number;
+  sightReadMode: boolean;
   isRecording: boolean;
   currentRecording: Recording | null;
   sightReadingSession: SightReadingSession | null;
@@ -34,6 +35,7 @@ interface AppState {
   setHandMode: (mode: HandMode) => void;
   toggleBarSelection: (bar: number) => void;
   selectBarRange: (bar: number) => void;
+  toggleSightReadMode: () => void;
   toggleTeachingSound: () => void;
   toggleAutoSpeedUp: () => void;
   setTargetTempo: (bpm: number) => void;
@@ -58,6 +60,7 @@ export const useAppStore = create<AppState>((set) => ({
   practiceMode: "free",
   handMode: "both",
   selectedBars: [],
+  sightReadMode: false,
   teachingSound: true,
   autoSpeedUp: false,
   consecutiveGoodLoops: 0,
@@ -101,6 +104,8 @@ export const useAppStore = create<AppState>((set) => ({
       for (let i = start; i <= end; i++) range.push(i);
       return { selectedBar: bar, selectedBars: range };
     }),
+
+  toggleSightReadMode: () => set((s) => ({ sightReadMode: !s.sightReadMode })),
 
   toggleTeachingSound: () => set((s) => ({ teachingSound: !s.teachingSound })),
 

@@ -4,19 +4,18 @@ import { useAppStore } from "@/lib/state/useAppStore";
 import type { PracticeMode, HandMode } from "@/lib/domain/types";
 
 interface PracticeToolbarProps {
-  onStartSightReading: () => void;
   onOpenStats: () => void;
 }
 
-export default function PracticeToolbar({ onStartSightReading, onOpenStats }: PracticeToolbarProps) {
+export default function PracticeToolbar({ onOpenStats }: PracticeToolbarProps) {
   const {
     practiceMode, setPracticeMode,
     handMode, setHandMode,
     teachingSound, toggleTeachingSound,
+    sightReadMode, toggleSightReadMode,
     autoSpeedUp, toggleAutoSpeedUp,
     targetTempo, setTargetTempo,
     isRecording, startRecording,
-    measureIds,
   } = useAppStore();
 
   const modes: { value: PracticeMode; label: string }[] = [
@@ -124,13 +123,16 @@ export default function PracticeToolbar({ onStartSightReading, onOpenStats }: Pr
         {isRecording ? "Rec..." : "Record"}
       </button>
 
-      {/* Sight-reading */}
+      {/* Sight-read mode (hides teaching keyboard) */}
       <button
-        onClick={onStartSightReading}
-        disabled={measureIds.length === 0}
-        className="rounded bg-neutral-800 px-2 py-1 font-medium text-neutral-400 transition-colors hover:text-neutral-200 disabled:opacity-30"
+        onClick={toggleSightReadMode}
+        className={`rounded px-2 py-1 font-medium transition-colors ${
+          sightReadMode
+            ? "bg-cyan-600 text-white"
+            : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+        }`}
       >
-        Sight-Read
+        Sight-Read {sightReadMode ? "ON" : "OFF"}
       </button>
 
       {/* Stats */}
