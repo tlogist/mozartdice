@@ -109,7 +109,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1, 1, 1],
   },
   13: {
-    rightHand: [{ midi: 72, startMs: 0, endMs: 0 }, { midi: 67, startMs: 0, endMs: 900 }, { midi: 64, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 72, startMs: 0, endMs: 900 }, { midi: 67, startMs: 0, endMs: 900 }, { midi: 64, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 52, startMs: 0, endMs: 1800 }, { midi: 55, startMs: 0, endMs: 1800 }],
     harmonicFunction: "I⁶ - V",
     teachingText: "I⁶ - V voicing. Shape the melody with gentle dynamic contrast.",
@@ -133,7 +133,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1, 5, 3, 5],
   },
   16: {
-    rightHand: [{ midi: 81, startMs: 0, endMs: 900 }, { midi: 78, startMs: 1000, endMs: 1000 }, { midi: 74, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 81, startMs: 0, endMs: 900 }, { midi: 78, startMs: 1000, endMs: 1900 }, { midi: 74, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 54, startMs: 0, endMs: 1800 }, { midi: 50, startMs: 2000, endMs: 3800 }, { midi: 54, startMs: 4000, endMs: 4900 }, { midi: 48, startMs: 5000, endMs: 5900 }],
     harmonicFunction: "ii - I",
     teachingText: "ii - I harmony. Listen to how the bass grounds the melody above.",
@@ -149,7 +149,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1, 5],
   },
   18: {
-    rightHand: [{ midi: 67, startMs: 0, endMs: 0 }, { midi: 72, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 67, startMs: 0, endMs: 900 }, { midi: 72, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 52, startMs: 0, endMs: 1800 }, { midi: 48, startMs: 2000, endMs: 3800 }, { midi: 55, startMs: 4000, endMs: 4900 }, { midi: 48, startMs: 5000, endMs: 5900 }],
     harmonicFunction: "I⁶ - I",
     teachingText: "I⁶ - I function. Feel the rhythmic drive of the eighth-note pulse.",
@@ -309,7 +309,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1, 5],
   },
   38: {
-    rightHand: [{ midi: 72, startMs: 0, endMs: 0 }, { midi: 67, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 72, startMs: 0, endMs: 900 }, { midi: 67, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 48, startMs: 0, endMs: 450 }, { midi: 52, startMs: 0, endMs: 450 }, { midi: 55, startMs: 500, endMs: 950 }, { midi: 48, startMs: 1000, endMs: 1450 }, { midi: 52, startMs: 1000, endMs: 1450 }, { midi: 55, startMs: 1500, endMs: 1950 }, { midi: 48, startMs: 2000, endMs: 2450 }, { midi: 52, startMs: 2000, endMs: 2450 }, { midi: 55, startMs: 2500, endMs: 2950 }],
     harmonicFunction: "I - V",
     teachingText: "I - V texture. Both hands work together to create a dance feel.",
@@ -397,7 +397,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [5, 1, 5, 3],
   },
   49: {
-    rightHand: [{ midi: 76, startMs: 0, endMs: 0 }, { midi: 72, startMs: 0, endMs: 900 }, { midi: 67, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 76, startMs: 0, endMs: 900 }, { midi: 72, startMs: 0, endMs: 900 }, { midi: 67, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 48, startMs: 0, endMs: 450 }, { midi: 52, startMs: 0, endMs: 450 }, { midi: 55, startMs: 500, endMs: 950 }, { midi: 48, startMs: 1000, endMs: 1450 }, { midi: 52, startMs: 1000, endMs: 1450 }, { midi: 55, startMs: 1500, endMs: 1950 }, { midi: 48, startMs: 2000, endMs: 2450 }, { midi: 52, startMs: 2000, endMs: 2450 }, { midi: 55, startMs: 2500, endMs: 2950 }],
     harmonicFunction: "I - V",
     teachingText: "I - V progression. Notice the interplay between the hands.",
@@ -557,7 +557,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1],
   },
   69: {
-    rightHand: [{ midi: 79, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1000 }, { midi: 72, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 79, startMs: 0, endMs: 900 }, { midi: 76, startMs: 1000, endMs: 1900 }, { midi: 72, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 52, startMs: 0, endMs: 1800 }, { midi: 48, startMs: 2000, endMs: 3800 }],
     harmonicFunction: "I⁶ - I",
     teachingText: "I⁶ - I voicing. Shape the melody with gentle dynamic contrast.",
@@ -869,7 +869,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [5, 2, 2, 3, 3, 5, 1, 2, 2, 3],
   },
   108: {
-    rightHand: [{ midi: 76, startMs: 0, endMs: 0 }, { midi: 79, startMs: 0, endMs: 900 }, { midi: 84, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 76, startMs: 0, endMs: 900 }, { midi: 79, startMs: 0, endMs: 900 }, { midi: 84, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 55, startMs: 0, endMs: 1800 }, { midi: 48, startMs: 2000, endMs: 3800 }, { midi: 52, startMs: 4000, endMs: 4900 }, { midi: 48, startMs: 5000, endMs: 5900 }],
     harmonicFunction: "V - I",
     teachingText: "V - I movement. Keep your wrist relaxed as you navigate these patterns.",
@@ -1325,7 +1325,7 @@ const data: Record<number, MeasureData> = {
     fingeringLeft: [1, 1, 1, 3, 4, 5],
   },
   165: {
-    rightHand: [{ midi: 74, startMs: 0, endMs: 0 }, { midi: 71, startMs: 0, endMs: 900 }, { midi: 67, startMs: 1000, endMs: 1900 }],
+    rightHand: [{ midi: 74, startMs: 0, endMs: 900 }, { midi: 71, startMs: 0, endMs: 900 }, { midi: 67, startMs: 1000, endMs: 1900 }],
     leftHand: [{ midi: 47, startMs: 0, endMs: 1800 }],
     harmonicFunction: "vii°",
     teachingText: "vii° voicing. Shape the melody with gentle dynamic contrast.",
