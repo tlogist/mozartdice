@@ -7,11 +7,15 @@ import { getMeasureData } from "@/lib/mozart/measureData";
 interface PlaybackControlsProps {
   onActiveNotes: (notes: Set<number>) => void;
   onExpectedNotes: (notes: number[]) => void;
+  onFingeringMap: (map: Map<number, number>) => void;
+  onLeftHandMidis: (midis: Set<number>) => void;
 }
 
 export default function PlaybackControls({
   onActiveNotes,
   onExpectedNotes,
+  onFingeringMap,
+  onLeftHandMidis,
 }: PlaybackControlsProps) {
   const { selectedBar, measureIds, isPlaying, tempo, togglePlayback } =
     useAppStore();
@@ -27,11 +31,43 @@ export default function PlaybackControls({
   // Total measure duration: 3 beats in 3/4 time
   const measureDurationMs = 3 * 1000 * tempoScale;
 
+  // Build fingering map from measure data (both hands)
+  const buildFingeringMap = useCallback(
+    (md: NonNullable<typeof measureData>): Map<number, number> => {
+      const map = new Map<number, number>();
+      md.rightHand.forEach((note, i) => {
+        if (md.fingeringRight[i] !== undefined) {
+          map.set(note.midi, md.fingeringRight[i]);
+        }
+      });
+      md.leftHand.forEach((note, i) => {
+        if (md.fingeringLeft[i] !== undefined) {
+          map.set(note.midi, md.fingeringLeft[i]);
+        }
+      });
+      return map;
+    },
+    []
+  );
+
+  // When a bar is selected, show expected notes + fingering even without playback
+  useEffect(() => {
+    if (measureData) {
+      const allNotes = [...measureData.rightHand, ...measureData.leftHand];
+      onExpectedNotes(allNotes.map((n) => n.midi));
+      onFingeringMap(buildFingeringMap(measureData));
+      onLeftHandMidis(new Set(measureData.leftHand.map((n) => n.midi)));
+    } else {
+      onExpectedNotes([]);
+      onFingeringMap(new Map());
+      onLeftHandMidis(new Set());
+    }
+  }, [measureData, onExpectedNotes, onFingeringMap, onLeftHandMidis, buildFingeringMap]);
+
   const stopPlayback = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     onActiveNotes(new Set());
-    onExpectedNotes([]);
-  }, [onActiveNotes, onExpectedNotes]);
+  }, [onActiveNotes]);
 
   useEffect(() => {
     if (!isPlaying || !measureData) {
@@ -40,8 +76,6 @@ export default function PlaybackControls({
     }
 
     const allNotes = [...measureData.rightHand, ...measureData.leftHand];
-    // Show all expected notes
-    onExpectedNotes(allNotes.map((n) => n.midi));
 
     startTimeRef.current = performance.now();
 
@@ -73,7 +107,6 @@ export default function PlaybackControls({
     tempoScale,
     measureDurationMs,
     onActiveNotes,
-    onExpectedNotes,
     stopPlayback,
   ]);
 

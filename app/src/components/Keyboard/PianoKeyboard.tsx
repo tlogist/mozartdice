@@ -5,6 +5,8 @@ import PianoKey from "./PianoKey";
 interface PianoKeyboardProps {
   activeNotes?: Set<number>;
   expectedNotes?: number[];
+  fingeringMap?: Map<number, number>;
+  leftHandMidis?: Set<number>;
   startMidi?: number;
   endMidi?: number;
 }
@@ -17,6 +19,8 @@ function isBlackKey(midi: number): boolean {
 export default function PianoKeyboard({
   activeNotes = new Set(),
   expectedNotes = [],
+  fingeringMap,
+  leftHandMidis,
   startMidi = 48,
   endMidi = 84,
 }: PianoKeyboardProps) {
@@ -47,6 +51,8 @@ export default function PianoKeyboard({
             isBlack={false}
             isActive={activeNotes.has(k.midi)}
             isExpected={expectedSet.has(k.midi)}
+            fingering={fingeringMap?.get(k.midi)}
+            hand={leftHandMidis?.has(k.midi) ? "left" : "right"}
           />
         ))}
         {/* Black keys positioned over white keys */}
@@ -67,6 +73,8 @@ export default function PianoKeyboard({
                 isBlack={true}
                 isActive={activeNotes.has(k.midi)}
                 isExpected={expectedSet.has(k.midi)}
+                fingering={fingeringMap?.get(k.midi)}
+                hand={leftHandMidis?.has(k.midi) ? "left" : "right"}
               />
             </div>
           );

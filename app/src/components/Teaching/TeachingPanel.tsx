@@ -32,9 +32,15 @@ export default function TeachingPanel() {
         </span>
       </div>
       <p className="mb-2 text-sm text-neutral-300">{data.teachingText}</p>
-      <div className="text-xs text-neutral-400">
-        <span className="font-semibold">RH Fingering: </span>
-        {data.fingeringRight.join(" - ")}
+      <div className="flex gap-4 text-xs text-neutral-400">
+        <div>
+          <span className="font-semibold">RH: </span>
+          {data.fingeringRight.join(" - ")}
+        </div>
+        <div>
+          <span className="font-semibold">LH: </span>
+          {data.fingeringLeft.join(" - ")}
+        </div>
       </div>
     </div>
   );
