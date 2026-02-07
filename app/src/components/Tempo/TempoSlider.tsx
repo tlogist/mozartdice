@@ -17,7 +17,7 @@ export default function TempoSlider() {
         max={120}
         value={tempo}
         onChange={(e) => setTempo(Number(e.target.value))}
-        className="w-48 accent-amber-500"
+        className="tempo-slider w-48"
       />
       <span className="min-w-[4ch] text-right font-mono text-sm text-amber-400">
         {tempo}
