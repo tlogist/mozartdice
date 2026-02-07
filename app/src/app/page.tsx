@@ -128,8 +128,18 @@ export default function Home() {
   const mergedFeedbackMap: Map<number, FeedbackColor> = practiceMode !== "free" ? feedbackMap : new Map();
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-4 py-8 dark:bg-black">
-      <main className="flex w-full max-w-4xl flex-col items-center gap-6">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-black">
+      {/* Left sidebar — practice toolbar */}
+      <aside className="sticky top-0 flex h-screen w-40 shrink-0 flex-col items-start gap-4 overflow-y-auto border-r border-neutral-800 bg-neutral-950 px-3 py-6">
+        <PracticeToolbar
+          onStartSightReading={startSightReading}
+          onOpenStats={() => setShowStats(true)}
+        />
+        <LoopControls />
+      </aside>
+
+      {/* Main content */}
+      <main className="flex min-w-0 flex-1 flex-col items-center gap-5 overflow-x-auto px-4 py-6">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           Dice &amp; Discipline
         </h1>
@@ -170,15 +180,6 @@ export default function Home() {
         )}
 
         <TeachingPanel />
-
-        {/* Practice toolbar */}
-        <PracticeToolbar
-          onStartSightReading={startSightReading}
-          onOpenStats={() => setShowStats(true)}
-        />
-
-        {/* Loop controls */}
-        <LoopControls />
 
         {/* Feedback overlay */}
         <FeedbackOverlay lastLoopResult={lastLoopResult} />

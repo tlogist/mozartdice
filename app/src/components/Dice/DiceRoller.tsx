@@ -25,11 +25,6 @@ export default function DiceRoller() {
     }, 600);
   }, [rollAllDice]);
 
-  const sums =
-    isAnimating && displaySums.length > 0
-      ? displaySums
-      : currentRolls.map((r) => r.sum);
-
   return (
     <div className="flex flex-col items-center gap-4">
       <button
@@ -40,16 +35,12 @@ export default function DiceRoller() {
         {isAnimating ? "Rolling..." : "Roll Dice"}
       </button>
 
-      {sums.length > 0 && (
+      {isAnimating && displaySums.length > 0 && (
         <div className="grid grid-cols-8 gap-2">
-          {sums.map((sum, i) => (
+          {displaySums.map((sum, i) => (
             <div
               key={i}
-              className={`flex h-10 w-10 items-center justify-center rounded-md text-sm font-bold ${
-                isAnimating
-                  ? "animate-pulse bg-amber-500/30 text-amber-300"
-                  : "bg-neutral-800 text-amber-400"
-              }`}
+              className="flex h-10 w-10 animate-pulse items-center justify-center rounded-md bg-amber-500/30 text-sm font-bold text-amber-300"
             >
               {sum}
             </div>
