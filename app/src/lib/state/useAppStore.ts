@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { DiceRoll, PracticeMode, HandMode, BarRange, Recording, SightReadingSession, LoopResult } from "@/lib/domain/types";
+import type { DiceRoll, PracticeMode, HandMode, Recording, SightReadingSession, LoopResult } from "@/lib/domain/types";
 import { generateMinuet } from "@/lib/mozart/generateMinuet";
 
 interface AppState {
@@ -13,7 +13,7 @@ interface AppState {
   // Practice
   practiceMode: PracticeMode;
   handMode: HandMode;
-  loopRange: BarRange | null;
+  selectedBars: number[];
   autoSpeedUp: boolean;
   consecutiveGoodLoops: number;
   targetTempo: number;
@@ -24,13 +24,15 @@ interface AppState {
   // Existing actions
   rollAllDice: () => void;
   selectBar: (bar: number | null) => void;
+  setActiveBar: (bar: number) => void;
   setTempo: (bpm: number) => void;
   togglePlayback: () => void;
 
   // Practice actions
   setPracticeMode: (mode: PracticeMode) => void;
   setHandMode: (mode: HandMode) => void;
-  setLoopRange: (range: BarRange | null) => void;
+  toggleBarSelection: (bar: number) => void;
+  selectBarRange: (bar: number) => void;
   toggleAutoSpeedUp: () => void;
   setTargetTempo: (bpm: number) => void;
   incrementGoodLoops: () => void;
@@ -53,7 +55,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   practiceMode: "free",
   handMode: "both",
-  loopRange: null,
+  selectedBars: [],
   autoSpeedUp: false,
   consecutiveGoodLoops: 0,
   targetTempo: 80,
@@ -63,10 +65,12 @@ export const useAppStore = create<AppState>((set) => ({
 
   rollAllDice: () => {
     const { rolls, measureIds } = generateMinuet();
-    set({ currentRolls: rolls, measureIds, selectedBar: null, isPlaying: false, loopRange: null });
+    set({ currentRolls: rolls, measureIds, selectedBar: null, isPlaying: false, selectedBars: [] });
   },
 
-  selectBar: (bar) => set({ selectedBar: bar }),
+  selectBar: (bar) => set({ selectedBar: bar, selectedBars: bar !== null ? [bar] : [] }),
+
+  setActiveBar: (bar) => set({ selectedBar: bar }),
 
   setTempo: (bpm) => set({ tempo: bpm }),
 
@@ -76,7 +80,24 @@ export const useAppStore = create<AppState>((set) => ({
 
   setHandMode: (mode) => set({ handMode: mode }),
 
-  setLoopRange: (range) => set({ loopRange: range }),
+  toggleBarSelection: (bar) =>
+    set((s) => {
+      const idx = s.selectedBars.indexOf(bar);
+      const next = idx >= 0
+        ? s.selectedBars.filter((b) => b !== bar)
+        : [...s.selectedBars, bar].sort((a, b) => a - b);
+      return { selectedBar: bar, selectedBars: next };
+    }),
+
+  selectBarRange: (bar) =>
+    set((s) => {
+      if (s.selectedBar === null) return { selectedBar: bar, selectedBars: [bar] };
+      const start = Math.min(s.selectedBar, bar);
+      const end = Math.max(s.selectedBar, bar);
+      const range: number[] = [];
+      for (let i = start; i <= end; i++) range.push(i);
+      return { selectedBar: bar, selectedBars: range };
+    }),
 
   toggleAutoSpeedUp: () => set((s) => ({ autoSpeedUp: !s.autoSpeedUp, consecutiveGoodLoops: 0 })),
 
@@ -105,6 +126,7 @@ export const useAppStore = create<AppState>((set) => ({
       practiceMode: "sightReading",
       isPlaying: true,
       selectedBar: 0,
+      selectedBars: [0],
     });
   },
 
@@ -120,6 +142,7 @@ export const useAppStore = create<AppState>((set) => ({
           currentBarIndex: nextIndex,
         },
         selectedBar: nextIndex < 16 ? nextIndex : s.selectedBar,
+        selectedBars: nextIndex < 16 ? [nextIndex] : s.selectedBars,
       };
     }),
 

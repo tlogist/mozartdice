@@ -26,15 +26,13 @@ export default function PlaybackControls({
   onAutoNoteOn,
   onAutoNoteOff,
 }: PlaybackControlsProps) {
-  const { selectedBar, measureIds, isPlaying, tempo, togglePlayback, loopRange, handMode } =
+  const { measureIds, isPlaying, tempo, togglePlayback, selectedBars, selectedBar, handMode } =
     useAppStore();
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const loopCountRef = useRef<number>(0);
   const prevAutoActiveRef = useRef<Set<number>>(new Set());
-
-  const measureId = selectedBar !== null ? measureIds[selectedBar] : null;
-  const measureData = measureId !== null ? getMeasureData(measureId) : null;
+  const activeBarIdxRef = useRef<number>(-1);
 
   // Scale factor: 60 BPM = 1x, higher BPM = faster
   const tempoScale = 60 / tempo;
@@ -42,72 +40,49 @@ export default function PlaybackControls({
   // Total measure duration: 3 beats in 3/4 time
   const singleMeasureDurationMs = 3 * 1000 * tempoScale;
 
-  // Build multi-bar data when loopRange is set
+  // Build multi-bar data from selectedBars (independent of selectedBar to avoid playback restarts)
   const getLoopData = useCallback(() => {
-    if (loopRange) {
-      const allNotes: ExpectedNote[] = [];
-      const rhNotes: ExpectedNote[] = [];
-      const lhNotes: ExpectedNote[] = [];
-      const fMap = new Map<number, number>();
-      const lhMidis = new Set<number>();
-      const barCount = loopRange.endBar - loopRange.startBar + 1;
+    const sorted = [...selectedBars].sort((a, b) => a - b);
+    if (sorted.length === 0) return null;
 
-      for (let i = 0; i < barCount; i++) {
-        const barIdx = loopRange.startBar + i;
-        const mid = measureIds[barIdx];
-        const md = mid !== undefined ? getMeasureData(mid) : null;
-        if (!md) continue;
-        const offset = i * 3000; // 3000ms per bar at base tempo
-
-        for (const note of md.rightHand) {
-          const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
-          allNotes.push(shifted);
-          rhNotes.push(shifted);
-        }
-        for (const note of md.leftHand) {
-          const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
-          allNotes.push(shifted);
-          lhNotes.push(shifted);
-          lhMidis.add(note.midi);
-        }
-
-        // Fingering
-        md.rightHand.forEach((note, j) => {
-          if (md.fingeringRight[j] !== undefined) fMap.set(note.midi, md.fingeringRight[j]);
-        });
-        md.leftHand.forEach((note, j) => {
-          if (md.fingeringLeft[j] !== undefined) fMap.set(note.midi, md.fingeringLeft[j]);
-        });
-      }
-
-      const totalDuration = barCount * singleMeasureDurationMs;
-      return { allNotes, rhNotes, lhNotes, fMap, lhMidis, totalDuration, barCount };
-    }
-
-    if (!measureData) return null;
-
-    const allNotes = [...measureData.rightHand, ...measureData.leftHand];
+    const allNotes: ExpectedNote[] = [];
+    const rhNotes: ExpectedNote[] = [];
+    const lhNotes: ExpectedNote[] = [];
     const fMap = new Map<number, number>();
     const lhMidis = new Set<number>();
 
-    measureData.rightHand.forEach((note, i) => {
-      if (measureData.fingeringRight[i] !== undefined) fMap.set(note.midi, measureData.fingeringRight[i]);
-    });
-    measureData.leftHand.forEach((note, i) => {
-      if (measureData.fingeringLeft[i] !== undefined) fMap.set(note.midi, measureData.fingeringLeft[i]);
-      lhMidis.add(note.midi);
-    });
+    for (let idx = 0; idx < sorted.length; idx++) {
+      const barIdx = sorted[idx];
+      const mid = measureIds[barIdx];
+      const md = mid !== undefined ? getMeasureData(mid) : null;
+      if (!md) continue;
+      const offset = idx * 3000;
 
-    return {
-      allNotes,
-      rhNotes: measureData.rightHand,
-      lhNotes: measureData.leftHand,
-      fMap,
-      lhMidis,
-      totalDuration: singleMeasureDurationMs,
-      barCount: 1,
-    };
-  }, [loopRange, measureData, measureIds, singleMeasureDurationMs]);
+      for (const note of md.rightHand) {
+        const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
+        allNotes.push(shifted);
+        rhNotes.push(shifted);
+      }
+      for (const note of md.leftHand) {
+        const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
+        allNotes.push(shifted);
+        lhNotes.push(shifted);
+        lhMidis.add(note.midi);
+      }
+
+      md.rightHand.forEach((note, j) => {
+        if (md.fingeringRight[j] !== undefined) fMap.set(note.midi, md.fingeringRight[j]);
+      });
+      md.leftHand.forEach((note, j) => {
+        if (md.fingeringLeft[j] !== undefined) fMap.set(note.midi, md.fingeringLeft[j]);
+      });
+    }
+
+    if (allNotes.length === 0) return null;
+
+    const totalDuration = sorted.length * singleMeasureDurationMs;
+    return { allNotes, rhNotes, lhNotes, fMap, lhMidis, totalDuration, barCount: sorted.length, sorted };
+  }, [selectedBars, measureIds, singleMeasureDurationMs]);
 
   // When selection changes, show expected notes + fingering even without playback
   useEffect(() => {
@@ -168,6 +143,18 @@ export default function PlaybackControls({
 
       onPlaybackPosition?.(position);
 
+      // Rotate active bar highlight + sheet music through selected bars
+      if (data.sorted && data.sorted.length > 1) {
+        const barInLoop = Math.min(
+          Math.floor(position / singleMeasureDurationMs),
+          data.sorted.length - 1,
+        );
+        if (barInLoop !== activeBarIdxRef.current) {
+          activeBarIdxRef.current = barInLoop;
+          useAppStore.getState().setActiveBar(data.sorted[barInLoop]);
+        }
+      }
+
       // Determine which notes to display vs auto-play based on hand mode
       const practiceNotes = handMode === "both" ? data.allNotes
         : handMode === "right" ? data.rhNotes : data.lhNotes;
@@ -226,15 +213,19 @@ export default function PlaybackControls({
     stopPlayback,
   ]);
 
-  // Reset position when bar changes during playback
+  // Reset position when selection or playback state changes
   useEffect(() => {
     if (isPlaying) {
       startTimeRef.current = performance.now();
       loopCountRef.current = 0;
+      activeBarIdxRef.current = -1;
     }
-  }, [selectedBar, loopRange, isPlaying]);
+  }, [selectedBars, isPlaying]);
 
-  const canPlay = (selectedBar !== null && measureData !== null) || loopRange !== null;
+  const canPlay = selectedBars.length > 0 && selectedBars.some((i) => {
+    const mid = measureIds[i];
+    return mid !== undefined && getMeasureData(mid) !== null;
+  });
 
   return (
     <div className="flex items-center gap-3">
@@ -254,7 +245,7 @@ export default function PlaybackControls({
           Play
         </button>
       )}
-      {selectedBar !== null && !measureData && !loopRange && (
+      {selectedBar !== null && selectedBars.length <= 1 && !getLoopData() && (
         <span className="text-xs text-neutral-500">
           No playback data for measure {measureIds[selectedBar]}
         </span>

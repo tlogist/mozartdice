@@ -42,16 +42,17 @@ export function usePracticeSession(
   const store = useAppStore;
 
   const getExpectedNotes = useCallback((): { notes: ExpectedNote[]; rhMidis: Set<number>; totalCount: number } => {
-    const { selectedBar, measureIds, loopRange, handMode } = store.getState();
+    const { selectedBars, measureIds, handMode } = store.getState();
     const rhMidis = new Set<number>();
     let allNotes: ExpectedNote[] = [];
 
-    if (loopRange) {
-      for (let i = loopRange.startBar; i <= loopRange.endBar; i++) {
-        const mid = measureIds[i];
+    if (selectedBars.length > 1) {
+      const sorted = [...selectedBars].sort((a, b) => a - b);
+      for (let idx = 0; idx < sorted.length; idx++) {
+        const mid = measureIds[sorted[idx]];
         const md = mid !== undefined ? getMeasureData(mid) : null;
         if (!md) continue;
-        const offset = (i - loopRange.startBar) * 3000;
+        const offset = idx * 3000;
         for (const n of md.rightHand) {
           allNotes.push({ midi: n.midi, startMs: n.startMs + offset, endMs: n.endMs + offset });
           rhMidis.add(n.midi);
@@ -60,8 +61,8 @@ export function usePracticeSession(
           allNotes.push({ midi: n.midi, startMs: n.startMs + offset, endMs: n.endMs + offset });
         }
       }
-    } else if (selectedBar !== null) {
-      const mid = measureIds[selectedBar];
+    } else if (selectedBars.length === 1) {
+      const mid = measureIds[selectedBars[0]];
       const md = mid !== undefined ? getMeasureData(mid) : null;
       if (md) {
         allNotes = [...md.rightHand, ...md.leftHand];
@@ -132,7 +133,7 @@ export function usePracticeSession(
   const onLoopComplete = useCallback(() => {
     const {
       practiceMode, autoSpeedUp, tempo, targetTempo,
-      isRecording, selectedBar, measureIds, loopRange,
+      isRecording, selectedBar, measureIds, selectedBars,
       incrementGoodLoops, resetGoodLoops, consecutiveGoodLoops,
       setTempo, stopRecording,
     } = store.getState();
@@ -148,7 +149,7 @@ export function usePracticeSession(
     evaluationsRef.current = [];
 
     // Record stats
-    const mid = loopRange ? measureIds[loopRange.startBar] : (selectedBar !== null ? measureIds[selectedBar] : null);
+    const mid = selectedBars.length > 0 ? measureIds[selectedBars[0]] : (selectedBar !== null ? measureIds[selectedBar] : null);
     if (mid !== undefined && mid !== null) {
       onStatsRecord?.(mid, result.accuracyPercent, tempo);
     }
