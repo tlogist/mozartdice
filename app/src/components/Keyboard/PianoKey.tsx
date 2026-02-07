@@ -2,6 +2,8 @@
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+export type FeedbackColor = "correct" | "wrong" | "early" | "late";
+
 interface PianoKeyProps {
   midi: number;
   isBlack: boolean;
@@ -9,17 +11,27 @@ interface PianoKeyProps {
   isExpected: boolean;
   fingering?: number;
   hand?: "left" | "right";
+  feedbackColor?: FeedbackColor;
 }
 
 function noteName(midi: number): string {
   return NOTE_NAMES[midi % 12];
 }
 
-export default function PianoKey({ midi, isBlack, isActive, isExpected, fingering, hand }: PianoKeyProps) {
+const FEEDBACK_BG: Record<FeedbackColor, string> = {
+  correct: "bg-emerald-400",
+  wrong: "bg-red-500",
+  early: "bg-orange-400",
+  late: "bg-amber-500",
+};
+
+export default function PianoKey({ midi, isBlack, isActive, isExpected, fingering, hand, feedbackColor }: PianoKeyProps) {
   const isLeft = hand === "left";
 
   let bg: string;
-  if (isActive) {
+  if (feedbackColor) {
+    bg = FEEDBACK_BG[feedbackColor];
+  } else if (isActive) {
     bg = isLeft ? "bg-red-500" : "bg-blue-500";
   } else if (isExpected) {
     if (isLeft) {
@@ -32,12 +44,14 @@ export default function PianoKey({ midi, isBlack, isActive, isExpected, fingerin
   }
 
   const textColor =
-    isExpected && isLeft && !isActive
-      ? "text-neutral-900"
-      : isActive || isExpected || isBlack
-        ? "text-white"
-        : "text-neutral-600";
-  const showFingering = fingering !== undefined && (isActive || isExpected);
+    feedbackColor
+      ? "text-white"
+      : isExpected && isLeft && !isActive
+        ? "text-neutral-900"
+        : isActive || isExpected || isBlack
+          ? "text-white"
+          : "text-neutral-600";
+  const showFingering = fingering !== undefined && (isActive || isExpected || !!feedbackColor);
 
   if (isBlack) {
     return (

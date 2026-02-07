@@ -1,12 +1,14 @@
 "use client";
 
 import PianoKey from "./PianoKey";
+import type { FeedbackColor } from "./PianoKey";
 
 interface PianoKeyboardProps {
   activeNotes?: Set<number>;
   expectedNotes?: number[];
   fingeringMap?: Map<number, number>;
   leftHandMidis?: Set<number>;
+  feedbackMap?: Map<number, FeedbackColor>;
   startMidi?: number;
   endMidi?: number;
 }
@@ -21,6 +23,7 @@ export default function PianoKeyboard({
   expectedNotes = [],
   fingeringMap,
   leftHandMidis,
+  feedbackMap,
   startMidi = 36,
   endMidi = 84,
 }: PianoKeyboardProps) {
@@ -53,6 +56,7 @@ export default function PianoKeyboard({
             isExpected={expectedSet.has(k.midi)}
             fingering={fingeringMap?.get(k.midi)}
             hand={leftHandMidis?.has(k.midi) ? "left" : "right"}
+            feedbackColor={feedbackMap?.get(k.midi)}
           />
         ))}
         {/* Black keys positioned over white keys */}
@@ -75,6 +79,7 @@ export default function PianoKeyboard({
                 isExpected={expectedSet.has(k.midi)}
                 fingering={fingeringMap?.get(k.midi)}
                 hand={leftHandMidis?.has(k.midi) ? "left" : "right"}
+                feedbackColor={feedbackMap?.get(k.midi)}
               />
             </div>
           );
