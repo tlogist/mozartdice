@@ -42,6 +42,15 @@ export default function PlaybackControls({
   // Total measure duration: 3 beats in 3/4 time
   const singleMeasureDurationMs = 3 * 1000 * tempoScale;
 
+  // Per-bar data for teaching keyboard (no time offsets — just midi/fingering info)
+  interface PerBarData {
+    rhMidis: number[];
+    lhMidis: number[];
+    allMidis: number[];
+    fMap: Map<number, number>;
+    lhMidiSet: Set<number>;
+  }
+
   // Build multi-bar data from selectedBars (independent of selectedBar to avoid playback restarts)
   const getLoopData = useCallback(() => {
     const sorted = [...selectedBars].sort((a, b) => a - b);
@@ -52,56 +61,93 @@ export default function PlaybackControls({
     const lhNotes: ExpectedNote[] = [];
     const fMap = new Map<number, number>();
     const lhMidis = new Set<number>();
+    const perBar: PerBarData[] = [];
 
     for (let idx = 0; idx < sorted.length; idx++) {
       const barIdx = sorted[idx];
       const mid = measureIds[barIdx];
       const md = mid !== undefined ? getMeasureData(mid) : null;
-      if (!md) continue;
+      if (!md) {
+        perBar.push({ rhMidis: [], lhMidis: [], allMidis: [], fMap: new Map(), lhMidiSet: new Set() });
+        continue;
+      }
       const offset = idx * 3000;
+
+      // Per-bar data (no offsets — for keyboard display)
+      const barFMap = new Map<number, number>();
+      const barLhMidis = new Set<number>();
+      const barRhMidis: number[] = [];
+      const barLhMidiArr: number[] = [];
 
       for (const note of md.rightHand) {
         const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
         allNotes.push(shifted);
         rhNotes.push(shifted);
+        barRhMidis.push(note.midi);
       }
       for (const note of md.leftHand) {
         const shifted = { midi: note.midi, startMs: note.startMs + offset, endMs: note.endMs + offset };
         allNotes.push(shifted);
         lhNotes.push(shifted);
         lhMidis.add(note.midi);
+        barLhMidis.add(note.midi);
+        barLhMidiArr.push(note.midi);
       }
 
       md.rightHand.forEach((note, j) => {
-        if (md.fingeringRight[j] !== undefined) fMap.set(note.midi, md.fingeringRight[j]);
+        if (md.fingeringRight[j] !== undefined) {
+          fMap.set(note.midi, md.fingeringRight[j]);
+          barFMap.set(note.midi, md.fingeringRight[j]);
+        }
       });
       md.leftHand.forEach((note, j) => {
-        if (md.fingeringLeft[j] !== undefined) fMap.set(note.midi, md.fingeringLeft[j]);
+        if (md.fingeringLeft[j] !== undefined) {
+          fMap.set(note.midi, md.fingeringLeft[j]);
+          barFMap.set(note.midi, md.fingeringLeft[j]);
+        }
+      });
+
+      perBar.push({
+        rhMidis: barRhMidis,
+        lhMidis: barLhMidiArr,
+        allMidis: [...barRhMidis, ...barLhMidiArr],
+        fMap: barFMap,
+        lhMidiSet: barLhMidis,
       });
     }
 
     if (allNotes.length === 0) return null;
 
     const totalDuration = sorted.length * singleMeasureDurationMs;
-    return { allNotes, rhNotes, lhNotes, fMap, lhMidis, totalDuration, barCount: sorted.length, sorted };
+    return { allNotes, rhNotes, lhNotes, fMap, lhMidis, totalDuration, barCount: sorted.length, sorted, perBar };
   }, [selectedBars, measureIds, singleMeasureDurationMs]);
 
-  // When selection changes, show expected notes + fingering even without playback
+  // When selection changes, show expected notes + fingering for the active bar
   useEffect(() => {
     const data = getLoopData();
     if (data) {
-      // Filter expected notes by hand mode
-      let displayNotes: ExpectedNote[];
-      if (handMode === "right") {
-        displayNotes = data.rhNotes;
-      } else if (handMode === "left") {
-        displayNotes = data.lhNotes;
+      // For multi-bar, show only the first bar's notes (tick will rotate during playback)
+      const bar = data.perBar.length > 1 ? data.perBar[0] : null;
+      if (bar) {
+        const midis = handMode === "right" ? bar.rhMidis
+          : handMode === "left" ? bar.lhMidis : bar.allMidis;
+        onExpectedNotes(midis);
+        onFingeringMap(bar.fMap);
+        onLeftHandMidis(bar.lhMidiSet);
       } else {
-        displayNotes = data.allNotes;
+        // Single bar — use all notes from the loop data
+        let displayNotes: ExpectedNote[];
+        if (handMode === "right") {
+          displayNotes = data.rhNotes;
+        } else if (handMode === "left") {
+          displayNotes = data.lhNotes;
+        } else {
+          displayNotes = data.allNotes;
+        }
+        onExpectedNotes(displayNotes.map((n) => n.midi));
+        onFingeringMap(data.fMap);
+        onLeftHandMidis(data.lhMidis);
       }
-      onExpectedNotes(displayNotes.map((n) => n.midi));
-      onFingeringMap(data.fMap);
-      onLeftHandMidis(data.lhMidis);
     } else {
       onExpectedNotes([]);
       onFingeringMap(new Map());
@@ -145,7 +191,10 @@ export default function PlaybackControls({
 
       onPlaybackPosition?.(position);
 
-      // Rotate active bar highlight + sheet music through selected bars
+      // Read handMode + teachingSound from store (avoids effect restart)
+      const { handMode: hm, teachingSound } = storeRef.current.getState();
+
+      // Rotate active bar highlight, sheet music, and teaching keyboard through selected bars
       if (data.sorted && data.sorted.length > 1) {
         const barInLoop = Math.min(
           Math.floor(position / singleMeasureDurationMs),
@@ -154,11 +203,18 @@ export default function PlaybackControls({
         if (barInLoop !== activeBarIdxRef.current) {
           activeBarIdxRef.current = barInLoop;
           useAppStore.getState().setActiveBar(data.sorted[barInLoop]);
+
+          // Update teaching keyboard to show only this bar's notes
+          const bar = data.perBar[barInLoop];
+          if (bar) {
+            const midis = hm === "both" ? bar.allMidis
+              : hm === "right" ? bar.rhMidis : bar.lhMidis;
+            onExpectedNotes(midis);
+            onFingeringMap(bar.fMap);
+            onLeftHandMidis(bar.lhMidiSet);
+          }
         }
       }
-
-      // Read handMode + teachingSound from store (avoids effect restart)
-      const { handMode: hm, teachingSound } = storeRef.current.getState();
 
       // Teaching keyboard shows the selected hand
       const displayNotes = hm === "both" ? data.allNotes
@@ -217,6 +273,9 @@ export default function PlaybackControls({
     tempoScale,
     singleMeasureDurationMs,
     onActiveNotes,
+    onExpectedNotes,
+    onFingeringMap,
+    onLeftHandMidis,
     onPlaybackPosition,
     onLoopBoundary,
     onAutoNoteOn,
