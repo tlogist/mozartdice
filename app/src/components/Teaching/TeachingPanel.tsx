@@ -22,17 +22,18 @@ export default function TeachingPanel() {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-3">
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="rounded bg-amber-600/30 px-2 py-0.5 text-sm font-bold text-amber-400">
-          {data.harmonicFunction}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-baseline gap-2">
+        <span className="text-xs font-medium text-neutral-500">
+          Bar {selectedBar + 1}
         </span>
-        <span className="text-xs text-neutral-500">
-          Bar {selectedBar + 1} — Measure {measureId}
-        </span>
+        <span className="text-xs text-neutral-600">#{measureId}</span>
       </div>
-      <p className="mb-2 text-sm text-neutral-300">{data.teachingText}</p>
-      <div className="flex gap-4 text-xs text-neutral-400">
+      <span className="self-start rounded bg-amber-600/30 px-2 py-0.5 text-sm font-bold text-amber-400">
+        {data.harmonicFunction}
+      </span>
+      <p className="text-xs leading-relaxed text-neutral-300">{data.teachingText}</p>
+      <div className="flex flex-col gap-1 text-xs text-neutral-400">
         <div>
           <span className="font-semibold">RH: </span>
           {data.fingeringRight.join(" - ")}

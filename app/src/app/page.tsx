@@ -149,8 +149,6 @@ export default function Home() {
           />
         )}
 
-        {!sightReadMode && <TeachingPanel />}
-
         {/* Feedback overlay */}
         <FeedbackOverlay lastLoopResult={lastLoopResult} />
 
@@ -200,6 +198,13 @@ export default function Home() {
           />
         )}
       </main>
+
+      {/* Right sidebar — teaching / measure info */}
+      {!sightReadMode && (
+        <aside className="sticky top-0 flex h-screen w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-neutral-800 bg-neutral-950 px-3 py-4">
+          <TeachingPanel />
+        </aside>
+      )}
     </div>
   );
 }
