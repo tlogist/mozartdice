@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.10.1",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -17,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tauri-apps/cli": "^2.10.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

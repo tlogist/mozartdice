@@ -12,6 +12,11 @@ export interface MidiInputState {
   isConnected: boolean;
 }
 
+/** Detect if running inside Tauri */
+function isTauri(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
 export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
   const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
   const [isConnected, setIsConnected] = useState(false);
@@ -19,6 +24,20 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
   const accessRef = useRef<MIDIAccess | null>(null);
   const callbacksRef = useRef<MidiCallbacks | undefined>(callbacks);
   callbacksRef.current = callbacks;
+
+  const handleNoteOn = useCallback((note: number, velocity: number) => {
+    callbacksRef.current?.onNoteOn?.(note, velocity);
+    pressedRef.current = new Set(pressedRef.current);
+    pressedRef.current.add(note);
+    setPressedNotes(pressedRef.current);
+  }, []);
+
+  const handleNoteOff = useCallback((note: number) => {
+    callbacksRef.current?.onNoteOff?.(note);
+    pressedRef.current = new Set(pressedRef.current);
+    pressedRef.current.delete(note);
+    setPressedNotes(pressedRef.current);
+  }, []);
 
   const handleMidiMessage = useCallback((event: MIDIMessageEvent) => {
     const data = event.data;
@@ -29,18 +48,11 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
     const velocity = data[2];
 
     if (status === 0x90 && velocity > 0) {
-      // Fire callback synchronously before state update for low latency
-      callbacksRef.current?.onNoteOn?.(note, velocity);
-      pressedRef.current = new Set(pressedRef.current);
-      pressedRef.current.add(note);
-      setPressedNotes(pressedRef.current);
+      handleNoteOn(note, velocity);
     } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
-      callbacksRef.current?.onNoteOff?.(note);
-      pressedRef.current = new Set(pressedRef.current);
-      pressedRef.current.delete(note);
-      setPressedNotes(pressedRef.current);
+      handleNoteOff(note);
     }
-  }, []);
+  }, [handleNoteOn, handleNoteOff]);
 
   const attachListeners = useCallback(
     (access: MIDIAccess) => {
@@ -54,7 +66,54 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
     [handleMidiMessage],
   );
 
+  // Tauri MIDI path — listen for events from Rust backend
   useEffect(() => {
+    if (!isTauri()) return;
+
+    let cancelled = false;
+    const unlisten: Array<() => void> = [];
+
+    async function setup() {
+      const { listen } = await import("@tauri-apps/api/event");
+
+      if (cancelled) return;
+
+      const u1 = await listen<{ note: number; velocity: number }>(
+        "midi:note-on",
+        (event) => {
+          handleNoteOn(event.payload.note, event.payload.velocity);
+        },
+      );
+      unlisten.push(u1);
+
+      const u2 = await listen<{ note: number }>(
+        "midi:note-off",
+        (event) => {
+          handleNoteOff(event.payload.note);
+        },
+      );
+      unlisten.push(u2);
+
+      const u3 = await listen<{ connected: boolean; port_name: string | null }>(
+        "midi:connection",
+        (event) => {
+          setIsConnected(event.payload.connected);
+        },
+      );
+      unlisten.push(u3);
+    }
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      unlisten.forEach((fn) => fn());
+    };
+  }, [handleNoteOn, handleNoteOff]);
+
+  // Web MIDI API path — used in browser (Chrome)
+  useEffect(() => {
+    if (isTauri()) return;
     if (typeof navigator === "undefined" || !navigator.requestMIDIAccess) {
       return;
     }
