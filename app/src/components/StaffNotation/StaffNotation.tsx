@@ -19,6 +19,7 @@ const NOTE_RX = 5.5;         // notehead horizontal radius
 const NOTE_RY = 4;           // notehead vertical radius
 const STEM_H = 30;
 const MEASURE_MS = 3000;     // base duration of one measure at 60 BPM
+const CUE_PROXIMITY_PX = 25; // how close a note must be to the cue bar to be "at" the cue
 
 // --- Position → Y conversion ---
 // Position 10 (F5) → TREBLE_TOP_Y, each step down = +LINE_SP/2
@@ -184,14 +185,63 @@ export default function StaffNotation({
       )}
 
       {/* Notes: accidental, notehead, stem, flag, fingering */}
-      {renderNotes.map((n, i) => (
-        <NoteGlyph
-          key={`note-${i}`}
-          note={n}
-          feedbackColor={feedbackMap?.get(n.midi)}
-          isPressed={pressedNotes?.has(n.midi) ?? false}
-        />
-      ))}
+      {renderNotes.map((n, i) => {
+        const isNearCue = highlightX !== null
+          ? Math.abs((n.x + n.offsetX) - highlightX) < CUE_PROXIMITY_PX
+          : true;
+        return (
+          <NoteGlyph
+            key={`note-${i}`}
+            note={n}
+            feedbackColor={isNearCue ? feedbackMap?.get(n.midi) : undefined}
+            isPressed={isNearCue && (pressedNotes?.has(n.midi) ?? false)}
+          />
+        );
+      })}
+
+      {/* Ghost noteheads for wrong/unmatched presses at cue position */}
+      {highlightX !== null && pressedNotes && pressedNotes.size > 0 && (() => {
+        const nearCueMidis = new Set<number>();
+        for (const n of renderNotes) {
+          if (Math.abs((n.x + n.offsetX) - highlightX) < CUE_PROXIMITY_PX) {
+            nearCueMidis.add(n.midi);
+          }
+        }
+        const ghosts: React.ReactElement[] = [];
+        pressedNotes.forEach((midi) => {
+          if (nearCueMidis.has(midi)) return;
+          const sn = midiToStaff(midi);
+          const gy = positionToY(sn.position);
+          const clef = noteClef(sn.position);
+          const ledgers = getLedgerLines(sn.position, clef);
+          ghosts.push(
+            <g key={`ghost-${midi}`}>
+              {ledgers.map((lp) => (
+                <line
+                  key={`ghost-ledger-${midi}-${lp}`}
+                  x1={highlightX - NOTE_RX - 4}
+                  x2={highlightX + NOTE_RX + 4}
+                  y1={positionToY(lp)}
+                  y2={positionToY(lp)}
+                  stroke="#ef4444"
+                  strokeWidth={1}
+                  opacity={0.6}
+                />
+              ))}
+              <ellipse
+                cx={highlightX}
+                cy={gy}
+                rx={NOTE_RX}
+                ry={NOTE_RY}
+                fill="#ef4444"
+                opacity={0.6}
+                transform={`rotate(-15 ${highlightX} ${gy})`}
+              />
+            </g>,
+          );
+        });
+        return ghosts;
+      })()}
     </svg>
   );
 }
@@ -294,7 +344,7 @@ function NoteGlyph({
   const fbColor = feedbackToColor(feedbackColor);
   const headColor = fbColor
     ?? (note.hand === "right" ? "#3b82f6" : "#a855f7"); // blue RH, purple LH
-  const pressedGlow = isPressed && !fbColor;
+  const pressedGlow = isPressed;
 
   return (
     <g>
