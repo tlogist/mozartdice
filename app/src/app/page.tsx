@@ -5,6 +5,7 @@ import DiceRoller from "@/components/Dice/DiceRoller";
 import MeasureGrid from "@/components/MeasureGrid/MeasureGrid";
 import PianoKeyboard from "@/components/Keyboard/PianoKeyboard";
 import TempoSlider from "@/components/Tempo/TempoSlider";
+import MetronomePanel from "@/components/Tempo/MetronomePanel";
 import PlaybackControls from "@/components/Playback/PlaybackControls";
 import TeachingPanel from "@/components/Teaching/TeachingPanel";
 import PracticeToolbar from "@/components/Practice/PracticeToolbar";
@@ -19,6 +20,7 @@ import { usePianoSynth } from "@/lib/hooks/usePianoSynth";
 import { usePracticeSession } from "@/lib/hooks/usePracticeSession";
 import { useSightReading } from "@/lib/hooks/useSightReading";
 import { useSessionStats } from "@/lib/hooks/useSessionStats";
+import { useMetronome } from "@/lib/hooks/useMetronome";
 import { useAppStore } from "@/lib/state/useAppStore";
 import { getMeasureData } from "@/lib/mozart/measureData";
 import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
@@ -32,6 +34,7 @@ export default function Home() {
   const [playbackPositionMs, setPlaybackPositionMs] = useState<number | null>(null);
 
   const { noteOn, noteOnAuto, noteOff } = usePianoSynth();
+  useMetronome();
   const { allStats, recordAttempt, getWeakMeasures, getRecommended } = useSessionStats();
   const {
     sightReadingSession,
@@ -146,6 +149,9 @@ export default function Home() {
           onOpenStats={() => setShowStats(true)}
         />
         <LoopControls />
+        <div className="mt-auto w-full">
+          <MetronomePanel />
+        </div>
       </aside>
 
       {/* Main content */}

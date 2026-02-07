@@ -15,6 +15,9 @@ interface AppState {
   handMode: HandMode;
   selectedBars: number[];
   teachingSound: boolean;
+  metronomeEnabled: boolean;
+  metronomeSubdivision: 1 | 2 | 3 | 4;
+  metronomeVolume: number;
   autoSpeedUp: boolean;
   consecutiveGoodLoops: number;
   targetTempo: number;
@@ -37,6 +40,9 @@ interface AppState {
   selectBarRange: (bar: number) => void;
   toggleSightReadMode: () => void;
   toggleTeachingSound: () => void;
+  toggleMetronome: () => void;
+  setMetronomeSubdivision: (value: 1 | 2 | 3 | 4) => void;
+  setMetronomeVolume: (value: number) => void;
   toggleAutoSpeedUp: () => void;
   setTargetTempo: (bpm: number) => void;
   incrementGoodLoops: () => void;
@@ -64,6 +70,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedBars: [],
   sightReadMode: false,
   teachingSound: true,
+  metronomeEnabled: false,
+  metronomeSubdivision: 1,
+  metronomeVolume: 0.7,
   autoSpeedUp: false,
   consecutiveGoodLoops: 0,
   targetTempo: 80,
@@ -125,6 +134,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   toggleTeachingSound: () => set((s) => ({ teachingSound: !s.teachingSound })),
+
+  toggleMetronome: () => set((s) => ({ metronomeEnabled: !s.metronomeEnabled })),
+
+  setMetronomeSubdivision: (value) => set({ metronomeSubdivision: value }),
+
+  setMetronomeVolume: (value) => set({ metronomeVolume: Math.min(1, Math.max(0, value)) }),
 
   toggleAutoSpeedUp: () => set((s) => ({ autoSpeedUp: !s.autoSpeedUp, consecutiveGoodLoops: 0 })),
 
