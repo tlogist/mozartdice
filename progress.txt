@@ -5,7 +5,11 @@
 - Run builds/typechecks from `app/` directory: `cd app && npm run build`
 - Tailwind v4 is used (uses `@import "tailwindcss"` syntax, not v3 config)
 - New lib modules should go in `app/src/lib/`
-- New components should go in `app/src/components/`
+- New components should go in `app/src/components/[Name]/[Name].tsx`
+- All interactive components need `"use client"` directive
+- State store: `@/lib/state/useAppStore` (Zustand v5)
+- Measure data: `@/lib/mozart/measureData` — getMeasureData(id) returns null for unknowns
+- npm cache issue: use `--cache /tmp/npm-cache` flag if permissions fail
 
 ---
 
@@ -39,5 +43,88 @@
   - Access trio: `mozartTrioTable[dieValue - 1][barIndex]`
   - Tables use `as const` for immutability
   - Mozart lib modules go in `app/src/lib/mozart/`
+- Tests use Vitest: run `cd app && npm test`
+- Test files go in `__tests__/` subdirectories next to source
+---
+
+## 2026-02-07 - US-004
+- Mozart minuet generator with dice rolling already implemented
+- Files: app/src/lib/mozart/generateMinuet.ts, app/src/lib/mozart/__tests__/generateMinuet.test.ts
+- Functions: rollDice(), validateRoll(), generateMinuet(fixedRolls?)
+- 9 tests passing covering deterministic output, edge cases, and error handling
+- **Learnings for future iterations:**
+  - generateMinuet() returns `{ rolls: DiceRoll[], measureIds: number[] }`
+  - Pass `fixedRolls` array for deterministic testing
+  - Import from `@/lib/mozart/generateMinuet`
+---
+
+## 2026-02-07 - US-005
+- Created Zustand v5 state store
+- Files created: app/src/lib/state/useAppStore.ts
+- State: currentRolls, measureIds, selectedBar, tempo, isPlaying
+- Actions: rollAllDice, selectBar, setTempo, togglePlayback
+- **Learnings for future iterations:**
+  - Import store from `@/lib/state/useAppStore`
+  - rollAllDice resets selectedBar and isPlaying
+  - Zustand v5 uses `create<T>()` pattern
+---
+
+## 2026-02-07 - US-006
+- Dice rolling UI with 600ms animation
+- Files created: app/src/components/Dice/DiceRoller.tsx
+- 8x2 grid showing 16 dice sums, pulse animation during roll
+- **Learnings for future iterations:**
+  - Components are in `app/src/components/[Name]/[Name].tsx`
+  - Use `"use client"` directive for all interactive components
+---
+
+## 2026-02-07 - US-007
+- 16-bar measure grid with clickable cells
+- Files created: app/src/components/MeasureGrid/MeasureGrid.tsx
+- 8x2 grid, amber highlight on selected bar, toggle selection on click
+- **Learnings for future iterations:**
+  - Grid hides when measureIds is empty (before first roll)
+---
+
+## 2026-02-07 - US-008
+- Visual piano keyboard component (MIDI 48-84)
+- Files created: app/src/components/Keyboard/PianoKeyboard.tsx, PianoKey.tsx
+- White/black keys with proper layout, blue active highlights, green expected highlights
+- **Learnings for future iterations:**
+  - Black keys positioned absolutely over white keys using index math
+  - White key width = 40px, used for positioning calculations
+---
+
+## 2026-02-07 - US-009
+- Placeholder measure data for 12 Mozart measures
+- Files created: app/src/lib/mozart/measureData.ts
+- MeasureData type with rightHand, leftHand, harmonicFunction, teachingText, fingeringRight
+- getMeasureData(id) returns null for unknown IDs
+- **Learnings for future iterations:**
+  - Sample measure IDs: 96, 32, 69, 40, 141, 104, 152, 119, 78, 29, 127, 1
+  - Note timings are based on quarter-note = 1000ms at 60BPM
+---
+
+## 2026-02-07 - US-010
+- Tempo slider control (40-120 BPM, default 60)
+- Files created: app/src/components/Tempo/TempoSlider.tsx
+- Range input with accent-amber-500 styling, BPM display
+---
+
+## 2026-02-07 - US-011
+- Measure playback with requestAnimationFrame looping
+- Files created: app/src/components/Playback/PlaybackControls.tsx
+- Tempo scaling: tempoScale = 60/tempo, Play/Stop toggle
+- Auto-loops using modulo on elapsed time
+- **Learnings for future iterations:**
+  - PlaybackControls takes onActiveNotes and onExpectedNotes callbacks
+  - State is lifted to page.tsx with useState + useCallback
+---
+
+## 2026-02-07 - US-012
+- Teaching overlay panel for selected bars
+- Files created: app/src/components/Teaching/TeachingPanel.tsx
+- Shows harmonic function badge, teaching text, RH fingering
+- Fallback: "Data not yet available" for unknown measure IDs
 ---
 
