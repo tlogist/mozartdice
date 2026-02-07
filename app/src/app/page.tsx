@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import DiceRoller from "@/components/Dice/DiceRoller";
 import MeasureGrid from "@/components/MeasureGrid/MeasureGrid";
 import PianoKeyboard from "@/components/Keyboard/PianoKeyboard";
@@ -12,6 +12,7 @@ import FeedbackOverlay from "@/components/Practice/FeedbackOverlay";
 import LoopControls from "@/components/Practice/LoopControls";
 import RecordingTimeline from "@/components/Recording/RecordingTimeline";
 import SightReadingView from "@/components/SightReading/SightReadingView";
+import StaffNotation from "@/components/StaffNotation/StaffNotation";
 import SessionDashboard from "@/components/Stats/SessionDashboard";
 import { useMidiInput } from "@/lib/hooks/useMidiInput";
 import { usePianoSynth } from "@/lib/hooks/usePianoSynth";
@@ -19,6 +20,7 @@ import { usePracticeSession } from "@/lib/hooks/usePracticeSession";
 import { useSessionStats } from "@/lib/hooks/useSessionStats";
 import { useSightReading } from "@/lib/hooks/useSightReading";
 import { useAppStore } from "@/lib/state/useAppStore";
+import { getMeasureData } from "@/lib/mozart/measureData";
 import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
 
 export default function Home() {
@@ -27,10 +29,13 @@ export default function Home() {
   const [fingeringMap, setFingeringMap] = useState<Map<number, number>>(new Map());
   const [leftHandMidis, setLeftHandMidis] = useState<Set<number>>(new Set());
   const [showStats, setShowStats] = useState(false);
+  const [playbackPositionMs, setPlaybackPositionMs] = useState<number | null>(null);
 
   const { noteOn, noteOff } = usePianoSynth();
   const { allStats, recordAttempt, getWeakMeasures, getRecommended } = useSessionStats();
   const measureIds = useAppStore((s) => s.measureIds);
+  const selectedBar = useAppStore((s) => s.selectedBar);
+  const tempo = useAppStore((s) => s.tempo);
   const practiceMode = useAppStore((s) => s.practiceMode);
   const selectBar = useAppStore((s) => s.selectBar);
 
@@ -103,6 +108,21 @@ export default function Home() {
     setShowStats(false);
   }, [measureIds, selectBar]);
 
+  // Wrap onPlaybackTick to also update playbackPositionMs for the staff
+  const handlePlaybackTick = useCallback((positionMs: number) => {
+    onPlaybackTick(positionMs);
+    setPlaybackPositionMs(positionMs);
+  }, [onPlaybackTick]);
+
+  // Measure data for staff notation (when a bar is selected and not in sight-reading)
+  const selectedMeasureId = selectedBar !== null ? measureIds[selectedBar] : null;
+  const staffMeasureData = useMemo(() => {
+    if (selectedMeasureId == null) return null;
+    return getMeasureData(selectedMeasureId);
+  }, [selectedMeasureId]);
+
+  const tempoScale = 60 / tempo;
+
   // Merge pressed notes with feedback coloring
   const mergedFeedbackMap: Map<number, FeedbackColor> = practiceMode !== "free" ? feedbackMap : new Map();
 
@@ -124,9 +144,27 @@ export default function Home() {
           <SightReadingView
             session={sightReadingSession}
             countdown={countdown}
+            playbackPositionMs={playbackPositionMs}
+            tempoScale={tempoScale}
+            feedbackMap={mergedFeedbackMap}
+            pressedNotes={pressedNotes}
             onRetry={startSightReading}
             onNewPiece={startSightReading}
             onClose={clearSightReading}
+          />
+        )}
+
+        {/* Staff notation when a bar is selected (non-sight-reading) */}
+        {!sightReadingSession && staffMeasureData && (
+          <StaffNotation
+            rightHand={staffMeasureData.rightHand}
+            leftHand={staffMeasureData.leftHand}
+            fingeringRight={staffMeasureData.fingeringRight}
+            fingeringLeft={staffMeasureData.fingeringLeft}
+            playbackPositionMs={playbackPositionMs}
+            tempoScale={tempoScale}
+            feedbackMap={mergedFeedbackMap}
+            pressedNotes={pressedNotes}
           />
         )}
 
@@ -153,7 +191,7 @@ export default function Home() {
             onExpectedNotes={handleExpectedNotes}
             onFingeringMap={handleFingeringMap}
             onLeftHandMidis={handleLeftHandMidis}
-            onPlaybackPosition={onPlaybackTick}
+            onPlaybackPosition={handlePlaybackTick}
             onLoopBoundary={handleLoopBoundary}
             onAutoNoteOn={handleAutoNoteOn}
             onAutoNoteOff={handleAutoNoteOff}

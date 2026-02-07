@@ -1,10 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import type { SightReadingSession, LoopResult } from "@/lib/domain/types";
+import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
+import StaffNotation from "@/components/StaffNotation/StaffNotation";
+import { getMeasureData } from "@/lib/mozart/measureData";
 
 interface SightReadingViewProps {
   session: SightReadingSession;
   countdown: number | null;
+  playbackPositionMs: number | null;
+  tempoScale: number;
+  feedbackMap?: Map<number, FeedbackColor>;
+  pressedNotes?: Set<number>;
   onRetry: () => void;
   onNewPiece: () => void;
   onClose: () => void;
@@ -36,7 +44,22 @@ function BarChart({ results }: { results: LoopResult[] }) {
   );
 }
 
-export default function SightReadingView({ session, countdown, onRetry, onNewPiece, onClose }: SightReadingViewProps) {
+export default function SightReadingView({
+  session,
+  countdown,
+  playbackPositionMs,
+  tempoScale,
+  feedbackMap,
+  pressedNotes,
+  onRetry,
+  onNewPiece,
+  onClose,
+}: SightReadingViewProps) {
+  const currentMeasureData = useMemo(() => {
+    if (session.isComplete) return null;
+    const mid = session.measureIds[session.currentBarIndex];
+    return mid !== undefined ? getMeasureData(mid) : null;
+  }, [session.isComplete, session.measureIds, session.currentBarIndex]);
   if (session.isComplete) {
     return (
       <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-lg border border-neutral-700 bg-neutral-900 p-6">
@@ -77,6 +100,19 @@ export default function SightReadingView({ session, countdown, onRetry, onNewPie
           <span className="text-3xl font-black text-amber-400 animate-pulse">{countdown}</span>
         )}
       </div>
+      {/* Staff notation for current bar */}
+      {currentMeasureData && (
+        <StaffNotation
+          rightHand={currentMeasureData.rightHand}
+          leftHand={currentMeasureData.leftHand}
+          fingeringRight={currentMeasureData.fingeringRight}
+          fingeringLeft={currentMeasureData.fingeringLeft}
+          playbackPositionMs={playbackPositionMs}
+          tempoScale={tempoScale}
+          feedbackMap={feedbackMap}
+          pressedNotes={pressedNotes}
+        />
+      )}
       {/* Progress dots */}
       <div className="flex gap-1">
         {session.measureIds.map((_, i) => (
