@@ -116,8 +116,15 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-black">
-      {/* Left sidebar — practice toolbar */}
-      <aside className="sticky top-0 flex h-screen w-40 shrink-0 flex-col items-start gap-4 overflow-y-auto border-r border-neutral-800 bg-neutral-950 px-3 py-6">
+      {/* Left sidebar */}
+      <aside className="sticky top-0 flex h-screen w-40 shrink-0 flex-col items-center gap-4 overflow-y-auto border-r border-neutral-800 bg-neutral-950 px-3 py-4">
+        <h1 className="text-center text-lg font-bold leading-tight tracking-tight text-zinc-50">
+          Dice &amp; Discipline
+        </h1>
+        <p className="text-center text-[10px] text-zinc-500">
+          From Mozart&apos;s Order to Beethoven&apos;s Agitation
+        </p>
+        <DiceRoller />
         <PracticeToolbar
           onOpenStats={() => setShowStats(true)}
         />
@@ -126,14 +133,6 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex min-w-0 flex-1 flex-col items-center gap-5 overflow-x-auto px-4 py-6">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Dice &amp; Discipline
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          From Mozart&apos;s Order to Beethoven&apos;s Agitation
-        </p>
-
-        <DiceRoller />
         <MeasureGrid />
 
         {/* Staff notation when a bar is selected */}

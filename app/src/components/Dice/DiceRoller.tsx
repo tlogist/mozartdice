@@ -26,27 +26,12 @@ export default function DiceRoller() {
   }, [rollAllDice]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <button
-        onClick={handleRoll}
-        disabled={isAnimating}
-        className="rounded-lg bg-amber-600 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-amber-500 disabled:opacity-50"
-      >
-        {isAnimating ? "Rolling..." : "Roll Dice"}
-      </button>
-
-      {isAnimating && displaySums.length > 0 && (
-        <div className="grid grid-cols-8 gap-2">
-          {displaySums.map((sum, i) => (
-            <div
-              key={i}
-              className="flex h-10 w-10 animate-pulse items-center justify-center rounded-md bg-amber-500/30 text-sm font-bold text-amber-300"
-            >
-              {sum}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      onClick={handleRoll}
+      disabled={isAnimating}
+      className={`w-full rounded-lg bg-amber-600 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-500 disabled:opacity-50 ${isAnimating ? "animate-pulse" : ""}`}
+    >
+      {isAnimating ? "Rolling..." : "Roll Dice"}
+    </button>
   );
 }
