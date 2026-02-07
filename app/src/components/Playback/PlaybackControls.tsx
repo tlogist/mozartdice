@@ -28,6 +28,8 @@ export default function PlaybackControls({
 }: PlaybackControlsProps) {
   const { measureIds, isPlaying, tempo, togglePlayback, selectedBars, selectedBar, handMode } =
     useAppStore();
+  // Read handMode/teachingSound from store inside tick to avoid restarting playback on changes
+  const storeRef = useRef(useAppStore);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const loopCountRef = useRef<number>(0);
@@ -155,15 +157,21 @@ export default function PlaybackControls({
         }
       }
 
-      // Determine which notes to display vs auto-play based on hand mode
-      const practiceNotes = handMode === "both" ? data.allNotes
-        : handMode === "right" ? data.rhNotes : data.lhNotes;
-      const autoPlayNotes = handMode === "both" ? []
-        : handMode === "right" ? data.lhNotes : data.rhNotes;
+      // Read handMode + teachingSound from store (avoids effect restart)
+      const { handMode: hm, teachingSound } = storeRef.current.getState();
 
-      // Active teaching display notes (practice hand)
+      // Teaching keyboard shows the selected hand
+      const displayNotes = hm === "both" ? data.allNotes
+        : hm === "right" ? data.rhNotes : data.lhNotes;
+
+      // Auto-play the selected hand (so user hears what they're learning)
+      const autoPlayNotes = !teachingSound ? []
+        : hm === "both" ? data.allNotes
+        : hm === "right" ? data.rhNotes : data.lhNotes;
+
+      // Active teaching display notes
       const active = new Set<number>();
-      for (const note of practiceNotes) {
+      for (const note of displayNotes) {
         const scaledStart = note.startMs * tempoScale;
         const scaledEnd = note.endMs * tempoScale;
         if (position >= scaledStart && position <= scaledEnd) {
@@ -172,7 +180,7 @@ export default function PlaybackControls({
       }
       onActiveNotes(active);
 
-      // Auto-play the other hand
+      // Auto-play sound
       const autoActive = new Set<number>();
       for (const note of autoPlayNotes) {
         const scaledStart = note.startMs * tempoScale;
@@ -182,7 +190,7 @@ export default function PlaybackControls({
         }
       }
 
-      // Trigger noteOn/Off for auto-play hand
+      // Trigger noteOn/Off for auto-play
       const prev = prevAutoActiveRef.current;
       for (const midi of autoActive) {
         if (!prev.has(midi)) onAutoNoteOn?.(midi);
@@ -199,12 +207,15 @@ export default function PlaybackControls({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      // Release any auto-play notes on cleanup
+      prevAutoActiveRef.current.forEach((midi) => onAutoNoteOff?.(midi));
+      prevAutoActiveRef.current.clear();
     };
   }, [
     isPlaying,
     getLoopData,
     tempoScale,
-    handMode,
+    singleMeasureDurationMs,
     onActiveNotes,
     onPlaybackPosition,
     onLoopBoundary,

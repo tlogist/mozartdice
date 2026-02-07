@@ -14,6 +14,7 @@ interface AppState {
   practiceMode: PracticeMode;
   handMode: HandMode;
   selectedBars: number[];
+  teachingSound: boolean;
   autoSpeedUp: boolean;
   consecutiveGoodLoops: number;
   targetTempo: number;
@@ -33,6 +34,7 @@ interface AppState {
   setHandMode: (mode: HandMode) => void;
   toggleBarSelection: (bar: number) => void;
   selectBarRange: (bar: number) => void;
+  toggleTeachingSound: () => void;
   toggleAutoSpeedUp: () => void;
   setTargetTempo: (bpm: number) => void;
   incrementGoodLoops: () => void;
@@ -56,6 +58,7 @@ export const useAppStore = create<AppState>((set) => ({
   practiceMode: "free",
   handMode: "both",
   selectedBars: [],
+  teachingSound: true,
   autoSpeedUp: false,
   consecutiveGoodLoops: 0,
   targetTempo: 80,
@@ -98,6 +101,8 @@ export const useAppStore = create<AppState>((set) => ({
       for (let i = start; i <= end; i++) range.push(i);
       return { selectedBar: bar, selectedBars: range };
     }),
+
+  toggleTeachingSound: () => set((s) => ({ teachingSound: !s.teachingSound })),
 
   toggleAutoSpeedUp: () => set((s) => ({ autoSpeedUp: !s.autoSpeedUp, consecutiveGoodLoops: 0 })),
 

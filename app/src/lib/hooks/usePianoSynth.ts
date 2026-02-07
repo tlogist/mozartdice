@@ -43,6 +43,8 @@ export function usePianoSynth() {
     const ctx = ensureContext();
     startLoading(ctx);
     if (sampledRef.current?.isLoaded) {
+      // Kill any leftover oscillator voice from before samples loaded
+      synthRef.current?.noteOff(note);
       sampledRef.current.noteOn(note, velocity);
     } else {
       getSynth().noteOn(note, velocity);
@@ -50,11 +52,9 @@ export function usePianoSynth() {
   }, []);
 
   const noteOff = useCallback((note: number) => {
-    if (sampledRef.current?.isLoaded) {
-      sampledRef.current.noteOff(note);
-    } else {
-      getSynth().noteOff(note);
-    }
+    // Release on both synths to prevent stuck notes during sample loading transition
+    synthRef.current?.noteOff(note);
+    sampledRef.current?.noteOff(note);
   }, []);
 
   useEffect(() => {

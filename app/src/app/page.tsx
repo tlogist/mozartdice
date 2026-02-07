@@ -37,6 +37,7 @@ export default function Home() {
   const selectedBar = useAppStore((s) => s.selectedBar);
   const tempo = useAppStore((s) => s.tempo);
   const practiceMode = useAppStore((s) => s.practiceMode);
+  const handMode = useAppStore((s) => s.handMode);
   const selectBar = useAppStore((s) => s.selectBar);
 
   const {
@@ -157,11 +158,11 @@ export default function Home() {
         {/* Staff notation when a bar is selected (non-sight-reading) */}
         {!sightReadingSession && staffMeasureData && (
           <StaffNotation
-            rightHand={staffMeasureData.rightHand}
-            leftHand={staffMeasureData.leftHand}
-            fingeringRight={staffMeasureData.fingeringRight}
-            fingeringLeft={staffMeasureData.fingeringLeft}
-            playbackPositionMs={playbackPositionMs}
+            rightHand={handMode === "left" ? [] : staffMeasureData.rightHand}
+            leftHand={handMode === "right" ? [] : staffMeasureData.leftHand}
+            fingeringRight={handMode === "left" ? [] : staffMeasureData.fingeringRight}
+            fingeringLeft={handMode === "right" ? [] : staffMeasureData.fingeringLeft}
+            playbackPositionMs={playbackPositionMs !== null ? playbackPositionMs % (3000 * tempoScale) : null}
             tempoScale={tempoScale}
             feedbackMap={mergedFeedbackMap}
             pressedNotes={pressedNotes}

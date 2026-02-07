@@ -12,6 +12,7 @@ export default function PracticeToolbar({ onStartSightReading, onOpenStats }: Pr
   const {
     practiceMode, setPracticeMode,
     handMode, setHandMode,
+    teachingSound, toggleTeachingSound,
     autoSpeedUp, toggleAutoSpeedUp,
     targetTempo, setTargetTempo,
     isRecording, startRecording,
@@ -66,6 +67,20 @@ export default function PracticeToolbar({ onStartSightReading, onOpenStats }: Pr
           </button>
         ))}
       </div>
+
+      <span className="text-neutral-600">|</span>
+
+      {/* Teaching sound */}
+      <button
+        onClick={toggleTeachingSound}
+        className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+          teachingSound
+            ? "bg-purple-600 text-white"
+            : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+        }`}
+      >
+        Sound {teachingSound ? "ON" : "OFF"}
+      </button>
 
       <span className="text-neutral-600">|</span>
 
