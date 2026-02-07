@@ -119,23 +119,6 @@ export default function SightReadingView({
           />
         )}
       </div>
-      {/* Progress dots */}
-      <div className="flex gap-1">
-        {session.measureIds.map((_, i) => (
-          <div
-            key={i}
-            className={`h-2 w-2 rounded-full ${
-              i < session.currentBarIndex
-                ? session.barResults[i]?.accuracyPercent >= 80
-                  ? "bg-emerald-500"
-                  : "bg-red-500"
-                : i === activeBarIndex
-                  ? "bg-amber-400"
-                  : "bg-neutral-700"
-            }`}
-          />
-        ))}
-      </div>
     </div>
   );
 }
