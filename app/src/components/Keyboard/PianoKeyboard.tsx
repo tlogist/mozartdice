@@ -21,7 +21,7 @@ export default function PianoKeyboard({
   expectedNotes = [],
   fingeringMap,
   leftHandMidis,
-  startMidi = 48,
+  startMidi = 36,
   endMidi = 84,
 }: PianoKeyboardProps) {
   const expectedSet = new Set(expectedNotes);
