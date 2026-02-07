@@ -83,19 +83,22 @@ export default function PracticeToolbar({ onOpenStats }: PracticeToolbarProps) {
         Sound {teachingSound ? "ON" : "OFF"}
       </button>
 
-      {/* Auto speed-up */}
+      {/* Auto speed-up (only available in scaffolded mode) */}
       <div className="flex flex-col gap-1">
         <button
           onClick={toggleAutoSpeedUp}
+          disabled={practiceMode !== "scaffolded"}
           className={`rounded px-2 py-1 font-medium transition-colors ${
-            autoSpeedUp
-              ? "bg-green-600 text-white"
-              : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+            practiceMode !== "scaffolded"
+              ? "bg-neutral-800 text-neutral-600 cursor-not-allowed"
+              : autoSpeedUp
+                ? "bg-green-600 text-white"
+                : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
           }`}
         >
-          Speed-up {autoSpeedUp ? "ON" : "OFF"}
+          Speed-up {autoSpeedUp && practiceMode === "scaffolded" ? "ON" : "OFF"}
         </button>
-        {autoSpeedUp && (
+        {autoSpeedUp && practiceMode === "scaffolded" && (
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-neutral-500">Target:</span>
             <input
