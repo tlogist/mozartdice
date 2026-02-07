@@ -57,8 +57,20 @@ export function usePianoSynth() {
     sampledRef.current?.noteOff(note);
   }, []);
 
+  // Start loading samples on first user interaction (click/keypress)
+  // so they're ready before the first noteOn
   useEffect(() => {
+    const warmup = () => {
+      const ctx = ensureContext();
+      startLoading(ctx);
+      document.removeEventListener("click", warmup);
+      document.removeEventListener("keydown", warmup);
+    };
+    document.addEventListener("click", warmup, { once: false });
+    document.addEventListener("keydown", warmup, { once: false });
     return () => {
+      document.removeEventListener("click", warmup);
+      document.removeEventListener("keydown", warmup);
       synthRef.current?.dispose();
       synthRef.current = null;
       sampledRef.current?.dispose();
