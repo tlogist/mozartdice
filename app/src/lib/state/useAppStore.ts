@@ -45,13 +45,14 @@ interface AppState {
   stopRecording: (recording: Recording) => void;
   clearRecording: () => void;
   startSightReading: () => void;
+  restartSightReading: () => void;
   advanceSightReading: (barResult: LoopResult) => void;
   finishSightReading: () => void;
   clearSightReading: () => void;
   rollWithFixedMeasure: (measureId: number) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   currentRolls: [],
   measureIds: [],
   selectedBar: null,
@@ -72,7 +73,16 @@ export const useAppStore = create<AppState>((set) => ({
 
   rollAllDice: () => {
     const { rolls, measureIds } = generateMinuet();
-    set({ currentRolls: rolls, measureIds, selectedBar: null, isPlaying: false, selectedBars: [] });
+    set({
+      currentRolls: rolls,
+      measureIds,
+      selectedBar: null,
+      isPlaying: false,
+      selectedBars: [],
+      sightReadMode: false,
+      sightReadingSession: null,
+      practiceMode: "free",
+    });
   },
 
   selectBar: (bar) => set({ selectedBar: bar, selectedBars: bar !== null ? [bar] : [] }),
@@ -106,7 +116,13 @@ export const useAppStore = create<AppState>((set) => ({
       return { selectedBar: bar, selectedBars: range };
     }),
 
-  toggleSightReadMode: () => set((s) => ({ sightReadMode: !s.sightReadMode })),
+  toggleSightReadMode: () => {
+    if (get().sightReadMode) {
+      get().clearSightReading();
+    } else {
+      get().startSightReading();
+    }
+  },
 
   toggleTeachingSound: () => set((s) => ({ teachingSound: !s.teachingSound })),
 
@@ -125,8 +141,10 @@ export const useAppStore = create<AppState>((set) => ({
   clearRecording: () => set({ currentRecording: null }),
 
   startSightReading: () => {
-    const { measureIds } = generateMinuet();
+    const { rolls, measureIds } = generateMinuet();
     set({
+      currentRolls: rolls,
+      measureIds,
       sightReadingSession: {
         measureIds,
         currentBarIndex: 0,
@@ -135,11 +153,37 @@ export const useAppStore = create<AppState>((set) => ({
         totalScore: 0,
       },
       practiceMode: "sightReading",
+      sightReadMode: true,
       isPlaying: true,
       selectedBar: 0,
       selectedBars: [0],
+      isRecording: false,
+      currentRecording: null,
     });
   },
+
+  restartSightReading: () =>
+    set((s) => {
+      const sessionMeasureIds = s.sightReadingSession?.measureIds ?? s.measureIds;
+      if (sessionMeasureIds.length === 0) return {};
+      return {
+        sightReadingSession: {
+          measureIds: sessionMeasureIds,
+          currentBarIndex: 0,
+          barResults: [],
+          isComplete: false,
+          totalScore: 0,
+        },
+        measureIds: sessionMeasureIds,
+        sightReadMode: true,
+        practiceMode: "sightReading",
+        isPlaying: true,
+        selectedBar: 0,
+        selectedBars: [0],
+        isRecording: false,
+        currentRecording: null,
+      };
+    }),
 
   advanceSightReading: (barResult) =>
     set((s) => {
@@ -152,8 +196,8 @@ export const useAppStore = create<AppState>((set) => ({
           barResults: newResults,
           currentBarIndex: nextIndex,
         },
-        selectedBar: nextIndex < 16 ? nextIndex : s.selectedBar,
-        selectedBars: nextIndex < 16 ? [nextIndex] : s.selectedBars,
+        selectedBar: nextIndex < s.sightReadingSession.measureIds.length ? nextIndex : s.selectedBar,
+        selectedBars: nextIndex < s.sightReadingSession.measureIds.length ? [nextIndex] : s.selectedBars,
       };
     }),
 
@@ -169,15 +213,32 @@ export const useAppStore = create<AppState>((set) => ({
       return {
         sightReadingSession: { ...s.sightReadingSession, isComplete: true, totalScore },
         isPlaying: false,
-        practiceMode: "free",
+        practiceMode: "sightReading",
       };
     }),
 
-  clearSightReading: () => set({ sightReadingSession: null, practiceMode: "free" }),
+  clearSightReading: () =>
+    set({
+      sightReadingSession: null,
+      sightReadMode: false,
+      practiceMode: "free",
+      isPlaying: false,
+      selectedBars: [],
+      selectedBar: null,
+    }),
 
   rollWithFixedMeasure: (measureId) => {
     const { rolls, measureIds } = generateMinuet();
     measureIds[0] = measureId;
-    set({ currentRolls: rolls, measureIds, selectedBar: 0, selectedBars: [0], isPlaying: false });
+    set({
+      currentRolls: rolls,
+      measureIds,
+      selectedBar: 0,
+      selectedBars: [0],
+      isPlaying: false,
+      sightReadMode: false,
+      sightReadingSession: null,
+      practiceMode: "free",
+    });
   },
 }));

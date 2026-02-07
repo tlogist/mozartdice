@@ -91,7 +91,7 @@ export default function SightReadingView({
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex w-full flex-col items-center gap-2">
       <div className="flex items-center gap-4">
         <span className="text-sm font-medium text-neutral-400">
           Bar {session.currentBarIndex + 1} of 16
@@ -101,18 +101,20 @@ export default function SightReadingView({
         )}
       </div>
       {/* Staff notation for current bar */}
-      {currentMeasureData && (
-        <StaffNotation
-          rightHand={currentMeasureData.rightHand}
-          leftHand={currentMeasureData.leftHand}
-          fingeringRight={currentMeasureData.fingeringRight}
-          fingeringLeft={currentMeasureData.fingeringLeft}
-          playbackPositionMs={playbackPositionMs}
-          tempoScale={tempoScale}
-          feedbackMap={feedbackMap}
-          pressedNotes={pressedNotes}
-        />
-      )}
+      <div className="w-full max-w-lg">
+        {currentMeasureData && (
+          <StaffNotation
+            rightHand={currentMeasureData.rightHand}
+            leftHand={currentMeasureData.leftHand}
+            fingeringRight={currentMeasureData.fingeringRight}
+            fingeringLeft={currentMeasureData.fingeringLeft}
+            playbackPositionMs={playbackPositionMs}
+            tempoScale={tempoScale}
+            feedbackMap={feedbackMap}
+            pressedNotes={pressedNotes}
+          />
+        )}
+      </div>
       {/* Progress dots */}
       <div className="flex gap-1">
         {session.measureIds.map((_, i) => (

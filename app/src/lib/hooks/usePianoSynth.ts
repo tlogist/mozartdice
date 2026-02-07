@@ -9,6 +9,8 @@ export function usePianoSynth() {
   const sampledRef = useRef<SampledPiano | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const loadingRef = useRef(false);
+  const loadPromiseRef = useRef<Promise<void> | null>(null);
+  const pendingAutoNotesRef = useRef<Map<number, number>>(new Map());
 
   const ensureContext = (): AudioContext => {
     if (!ctxRef.current) {
@@ -27,21 +29,42 @@ export function usePianoSynth() {
     return synthRef.current;
   };
 
-  const startLoading = (ctx: AudioContext) => {
-    if (loadingRef.current) return;
-    if (sampledRef.current?.isLoaded) return;
+  const flushPendingAutoNotes = useCallback(() => {
+    if (!sampledRef.current?.isLoaded) return;
+    pendingAutoNotesRef.current.forEach((velocity, note) => {
+      // Ensure no oscillator voice is left over before handing note to sampler.
+      synthRef.current?.noteOff(note);
+      sampledRef.current?.noteOn(note, velocity);
+    });
+    pendingAutoNotesRef.current.clear();
+  }, []);
+
+  const startLoading = useCallback((ctx: AudioContext): Promise<void> => {
+    if (sampledRef.current?.isLoaded) {
+      return Promise.resolve();
+    }
+    if (loadingRef.current && loadPromiseRef.current) {
+      return loadPromiseRef.current;
+    }
+
     loadingRef.current = true;
     if (!sampledRef.current) {
       sampledRef.current = new SampledPiano();
     }
-    sampledRef.current.load(ctx).then(() => {
-      loadingRef.current = false;
-    });
-  };
+    loadPromiseRef.current = sampledRef.current
+      .load(ctx)
+      .then(() => {
+        flushPendingAutoNotes();
+      })
+      .finally(() => {
+        loadingRef.current = false;
+      });
+    return loadPromiseRef.current;
+  }, [flushPendingAutoNotes]);
 
   const noteOn = useCallback((note: number, velocity: number) => {
     const ctx = ensureContext();
-    startLoading(ctx);
+    void startLoading(ctx);
     if (sampledRef.current?.isLoaded) {
       // Kill any leftover oscillator voice from before samples loaded
       synthRef.current?.noteOff(note);
@@ -49,9 +72,23 @@ export function usePianoSynth() {
     } else {
       getSynth().noteOn(note, velocity);
     }
-  }, []);
+  }, [startLoading]);
+
+  const noteOnAuto = useCallback((note: number, velocity: number) => {
+    const ctx = ensureContext();
+    if (sampledRef.current?.isLoaded) {
+      synthRef.current?.noteOff(note);
+      sampledRef.current.noteOn(note, velocity);
+      return;
+    }
+
+    // For auto-play, avoid timbre switching by waiting for sampled piano.
+    pendingAutoNotesRef.current.set(note, velocity);
+    void startLoading(ctx);
+  }, [startLoading]);
 
   const noteOff = useCallback((note: number) => {
+    pendingAutoNotesRef.current.delete(note);
     // Release on both synths to prevent stuck notes during sample loading transition
     synthRef.current?.noteOff(note);
     sampledRef.current?.noteOff(note);
@@ -60,9 +97,10 @@ export function usePianoSynth() {
   // Start loading samples on first user interaction (click/keypress)
   // so they're ready before the first noteOn
   useEffect(() => {
+    const pendingAutoNotes = pendingAutoNotesRef.current;
     const warmup = () => {
       const ctx = ensureContext();
-      startLoading(ctx);
+      void startLoading(ctx);
       document.removeEventListener("click", warmup);
       document.removeEventListener("keydown", warmup);
     };
@@ -75,10 +113,12 @@ export function usePianoSynth() {
       synthRef.current = null;
       sampledRef.current?.dispose();
       sampledRef.current = null;
+      pendingAutoNotes.clear();
+      loadPromiseRef.current = null;
       ctxRef.current?.close();
       ctxRef.current = null;
     };
-  }, []);
+  }, [startLoading]);
 
-  return { noteOn, noteOff };
+  return { noteOn, noteOnAuto, noteOff };
 }

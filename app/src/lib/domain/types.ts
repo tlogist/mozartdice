@@ -27,6 +27,8 @@ export interface ExpectedNote {
   midi: number;
   startMs: number;
   endMs: number;
+  hand?: "right" | "left";
+  expectedId?: string;
 }
 
 /** A generated exercise consisting of measures and their expected notes */
@@ -51,6 +53,7 @@ export interface PlayedNote {
 export interface NoteEvaluation {
   midi: number;
   matchedExpected: ExpectedNote | null;
+  matchedExpectedId: string | null;
   timing: TimingJudgment;
   offsetMs: number;
 }

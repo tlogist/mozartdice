@@ -13,9 +13,11 @@ import LoopControls from "@/components/Practice/LoopControls";
 import RecordingTimeline from "@/components/Recording/RecordingTimeline";
 import StaffNotation from "@/components/StaffNotation/StaffNotation";
 import SessionDashboard from "@/components/Stats/SessionDashboard";
+import SightReadingView from "@/components/SightReading/SightReadingView";
 import { useMidiInput } from "@/lib/hooks/useMidiInput";
 import { usePianoSynth } from "@/lib/hooks/usePianoSynth";
 import { usePracticeSession } from "@/lib/hooks/usePracticeSession";
+import { useSightReading } from "@/lib/hooks/useSightReading";
 import { useSessionStats } from "@/lib/hooks/useSessionStats";
 import { useAppStore } from "@/lib/state/useAppStore";
 import { getMeasureData } from "@/lib/mozart/measureData";
@@ -29,8 +31,16 @@ export default function Home() {
   const [showStats, setShowStats] = useState(false);
   const [playbackPositionMs, setPlaybackPositionMs] = useState<number | null>(null);
 
-  const { noteOn, noteOff } = usePianoSynth();
+  const { noteOn, noteOnAuto, noteOff } = usePianoSynth();
   const { allStats, recordAttempt, getWeakMeasures, getRecommended } = useSessionStats();
+  const {
+    sightReadingSession,
+    countdown,
+    startSightReading,
+    restartSightReading,
+    clearSightReading,
+    onBarComplete,
+  } = useSightReading();
   const measureIds = useAppStore((s) => s.measureIds);
   const selectedBar = useAppStore((s) => s.selectedBar);
   const tempo = useAppStore((s) => s.tempo);
@@ -79,16 +89,19 @@ export default function Home() {
   }, []);
 
   const handleAutoNoteOn = useCallback((midi: number) => {
-    noteOn(midi, 80);
-  }, [noteOn]);
+    noteOnAuto(midi, 80);
+  }, [noteOnAuto]);
 
   const handleAutoNoteOff = useCallback((midi: number) => {
     noteOff(midi);
   }, [noteOff]);
 
-  const handleLoopBoundary = useCallback((loopCount: number) => {
-    onLoopComplete();
-  }, [onLoopComplete]);
+  const handleLoopBoundary = useCallback(() => {
+    const result = onLoopComplete();
+    if (result && sightReadMode) {
+      onBarComplete(result);
+    }
+  }, [onLoopComplete, sightReadMode, onBarComplete]);
 
   const handleSelectMeasure = useCallback((measureId: number) => {
     const idx = measureIds.indexOf(measureId);
@@ -96,10 +109,14 @@ export default function Home() {
     setShowStats(false);
   }, [measureIds, selectBar]);
 
-  // Wrap onPlaybackTick to also update playbackPositionMs for the staff
-  const handlePlaybackTick = useCallback((positionMs: number) => {
-    onPlaybackTick(positionMs);
+  // Local bar position for staff rendering
+  const handlePlaybackPosition = useCallback((positionMs: number) => {
     setPlaybackPositionMs(positionMs);
+  }, []);
+
+  // Global loop position for timing evaluation
+  const handlePlaybackLoopTick = useCallback((positionMs: number) => {
+    onPlaybackTick(positionMs);
   }, [onPlaybackTick]);
 
   // Measure data for staff notation (when a bar is selected and not in sight-reading)
@@ -133,19 +150,32 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex min-w-0 flex-1 flex-col items-center gap-5 overflow-x-auto px-4 py-6">
-        <MeasureGrid />
+        {!sightReadMode && <MeasureGrid />}
 
         {/* Staff notation when a bar is selected */}
-        {staffMeasureData && (
+        {!sightReadMode && staffMeasureData && (
           <StaffNotation
             rightHand={handMode === "left" ? [] : staffMeasureData.rightHand}
             leftHand={handMode === "right" ? [] : staffMeasureData.leftHand}
             fingeringRight={handMode === "left" ? [] : staffMeasureData.fingeringRight}
             fingeringLeft={handMode === "right" ? [] : staffMeasureData.fingeringLeft}
-            playbackPositionMs={playbackPositionMs !== null ? playbackPositionMs % (3000 * tempoScale) : null}
+            playbackPositionMs={playbackPositionMs}
             tempoScale={tempoScale}
             feedbackMap={mergedFeedbackMap}
             pressedNotes={pressedNotes}
+          />
+        )}
+        {sightReadMode && sightReadingSession && (
+          <SightReadingView
+            session={sightReadingSession}
+            countdown={countdown}
+            playbackPositionMs={playbackPositionMs}
+            tempoScale={tempoScale}
+            feedbackMap={mergedFeedbackMap}
+            pressedNotes={pressedNotes}
+            onRetry={restartSightReading}
+            onNewPiece={startSightReading}
+            onClose={clearSightReading}
           />
         )}
 
@@ -153,7 +183,9 @@ export default function Home() {
         <FeedbackOverlay lastLoopResult={lastLoopResult} />
 
         {/* Recording timeline */}
-        <RecordingTimeline onReplayNoteOn={noteOn} onReplayNoteOff={noteOff} />
+        {!sightReadMode && (
+          <RecordingTimeline onReplayNoteOn={noteOn} onReplayNoteOff={noteOff} />
+        )}
 
         <div className="flex items-center gap-6">
           <PlaybackControls
@@ -161,7 +193,8 @@ export default function Home() {
             onExpectedNotes={handleExpectedNotes}
             onFingeringMap={handleFingeringMap}
             onLeftHandMidis={handleLeftHandMidis}
-            onPlaybackPosition={handlePlaybackTick}
+            onPlaybackPosition={handlePlaybackPosition}
+            onPlaybackLoopPosition={handlePlaybackLoopTick}
             onLoopBoundary={handleLoopBoundary}
             onAutoNoteOn={handleAutoNoteOn}
             onAutoNoteOff={handleAutoNoteOff}

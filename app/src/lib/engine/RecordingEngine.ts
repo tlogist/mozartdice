@@ -12,6 +12,10 @@ export class RecordingEngine {
   }
 
   noteOn(midi: number, velocity: number): number {
+    if (this.baselineMs === 0) {
+      // Defensive: if recording start lifecycle is missed, initialize baseline on first note.
+      this.start();
+    }
     const timestampMs = performance.now() - this.baselineMs;
     const note: PlayedNote = { midi, velocity, timestampMs, releaseMs: null };
     const idx = this.notes.length;

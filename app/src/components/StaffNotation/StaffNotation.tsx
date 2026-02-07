@@ -18,7 +18,7 @@ const NOTE_AREA_W = 430;
 const NOTE_RX = 5.5;         // notehead horizontal radius
 const NOTE_RY = 4;           // notehead vertical radius
 const STEM_H = 30;
-const MEASURE_MS = 3000;     // base duration of one measure at 60 BPM
+const MIN_MEASURE_MS = 3000; // base minimum at 60 BPM
 const CUE_PROXIMITY_PX = 25; // how close a note must be to the cue bar to be "at" the cue
 
 // --- Position → Y conversion ---
@@ -73,6 +73,13 @@ export default function StaffNotation({
   feedbackMap,
   pressedNotes,
 }: StaffNotationProps) {
+  const measureDurationMs = useMemo(() => {
+    const all = [...rightHand, ...leftHand];
+    if (all.length === 0) return MIN_MEASURE_MS;
+    const maxEndMs = all.reduce((max, note) => Math.max(max, note.endMs), 0);
+    return Math.max(MIN_MEASURE_MS, maxEndMs);
+  }, [rightHand, leftHand]);
+
   const renderNotes = useMemo(() => {
     const notes: RenderNote[] = [];
 
@@ -85,7 +92,7 @@ export default function StaffNotation({
         const en = expectedNotes[i];
         const sn = midiToStaff(en.midi);
         const dur = classifyDuration(en.startMs, en.endMs);
-        const x = NOTE_AREA_LEFT + (en.startMs / MEASURE_MS) * NOTE_AREA_W;
+        const x = NOTE_AREA_LEFT + (en.startMs / measureDurationMs) * NOTE_AREA_W;
         const y = positionToY(sn.position);
         const clef = noteClef(sn.position);
         const ledgers = getLedgerLines(sn.position, clef);
@@ -134,13 +141,13 @@ export default function StaffNotation({
     }
 
     return notes;
-  }, [rightHand, leftHand, fingeringRight, fingeringLeft]);
+  }, [rightHand, leftHand, fingeringRight, fingeringLeft, measureDurationMs]);
 
   // Beat highlight X position
   const highlightX = useMemo(() => {
     if (playbackPositionMs === null) return null;
-    return NOTE_AREA_LEFT + (playbackPositionMs / (MEASURE_MS * tempoScale)) * NOTE_AREA_W;
-  }, [playbackPositionMs, tempoScale]);
+    return NOTE_AREA_LEFT + (playbackPositionMs / (measureDurationMs * tempoScale)) * NOTE_AREA_W;
+  }, [playbackPositionMs, tempoScale, measureDurationMs]);
 
   return (
     <svg

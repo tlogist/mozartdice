@@ -23,7 +23,9 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
   const pressedRef = useRef<Set<number>>(new Set());
   const accessRef = useRef<MIDIAccess | null>(null);
   const callbacksRef = useRef<MidiCallbacks | undefined>(callbacks);
-  callbacksRef.current = callbacks;
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   const handleNoteOn = useCallback((note: number, velocity: number) => {
     callbacksRef.current?.onNoteOn?.(note, velocity);
@@ -74,7 +76,10 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
     const unlisten: Array<() => void> = [];
 
     async function setup() {
-      const { listen } = await import("@tauri-apps/api/event");
+      const [{ listen }, { invoke }] = await Promise.all([
+        import("@tauri-apps/api/event"),
+        import("@tauri-apps/api/core"),
+      ]);
 
       if (cancelled) return;
 
@@ -101,6 +106,15 @@ export function useMidiInput(callbacks?: MidiCallbacks): MidiInputState {
         },
       );
       unlisten.push(u3);
+
+      try {
+        const status = await invoke<{ connected: boolean; port_name: string | null }>("midi_status");
+        if (!cancelled) {
+          setIsConnected(status.connected);
+        }
+      } catch {
+        // Best-effort status sync; connection events will still update state.
+      }
     }
 
     setup();

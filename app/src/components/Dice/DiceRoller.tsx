@@ -4,23 +4,15 @@ import { useState, useCallback } from "react";
 import { useAppStore } from "@/lib/state/useAppStore";
 
 export default function DiceRoller() {
-  const { currentRolls, rollAllDice, rollWithFixedMeasure } = useAppStore();
+  const { rollAllDice, rollWithFixedMeasure } = useAppStore();
   const [isAnimating, setIsAnimating] = useState(false);
-  const [displaySums, setDisplaySums] = useState<number[]>([]);
   const [measureInput, setMeasureInput] = useState("");
 
   const handleRoll = useCallback(() => {
     setIsAnimating(true);
 
-    // Animate random numbers for 600ms
-    const interval = setInterval(() => {
-      setDisplaySums(
-        Array.from({ length: 16 }, () => Math.floor(Math.random() * 11) + 2)
-      );
-    }, 50);
-
+    // Brief pulse before applying a fresh generated piece.
     setTimeout(() => {
-      clearInterval(interval);
       rollAllDice();
       setIsAnimating(false);
     }, 600);

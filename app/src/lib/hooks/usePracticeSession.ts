@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/lib/state/useAppStore";
 import { PracticeEngine } from "@/lib/engine/PracticeEngine";
 import { RecordingEngine } from "@/lib/engine/RecordingEngine";
-import { getMeasureData } from "@/lib/mozart/measureData";
 import type { NoteEvaluation, LoopResult, ExpectedNote } from "@/lib/domain/types";
 import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
+import { buildLoopData } from "@/lib/mozart/loopData";
 
 interface UsePracticeSessionReturn {
   feedbackMap: Map<number, FeedbackColor>;
@@ -14,7 +14,7 @@ interface UsePracticeSessionReturn {
   onPracticeNoteOn: (note: number, velocity: number) => void;
   onPracticeNoteOff: (note: number) => void;
   onPlaybackTick: (positionMs: number) => void;
-  onLoopComplete: () => void;
+  onLoopComplete: () => LoopResult | null;
 }
 
 function timingToFeedback(timing: NoteEvaluation["timing"]): FeedbackColor {
@@ -41,41 +41,48 @@ export function usePracticeSession(
 
   const store = useAppStore;
 
-  const getExpectedNotes = useCallback((): { notes: ExpectedNote[]; rhMidis: Set<number>; totalCount: number } => {
-    const { selectedBars, measureIds, handMode } = store.getState();
-    const rhMidis = new Set<number>();
-    let allNotes: ExpectedNote[] = [];
+  useEffect(() => {
+    const feedbackTimers = feedbackTimersRef.current;
+    // Start the recording clock exactly when recording toggles on.
+    let wasRecording = store.getState().isRecording;
+    if (wasRecording) recorderRef.current.start();
 
-    if (selectedBars.length > 1) {
-      const sorted = [...selectedBars].sort((a, b) => a - b);
-      for (let idx = 0; idx < sorted.length; idx++) {
-        const mid = measureIds[sorted[idx]];
-        const md = mid !== undefined ? getMeasureData(mid) : null;
-        if (!md) continue;
-        const offset = idx * 3000;
-        for (const n of md.rightHand) {
-          allNotes.push({ midi: n.midi, startMs: n.startMs + offset, endMs: n.endMs + offset });
-          rhMidis.add(n.midi);
-        }
-        for (const n of md.leftHand) {
-          allNotes.push({ midi: n.midi, startMs: n.startMs + offset, endMs: n.endMs + offset });
-        }
+    const unsubscribe = store.subscribe((state) => {
+      if (state.isRecording && !wasRecording) {
+        recorderRef.current.start();
       }
-    } else if (selectedBars.length === 1) {
-      const mid = measureIds[selectedBars[0]];
-      const md = mid !== undefined ? getMeasureData(mid) : null;
-      if (md) {
-        allNotes = [...md.rightHand, ...md.leftHand];
-        md.rightHand.forEach((n) => rhMidis.add(n.midi));
-      }
+      wasRecording = state.isRecording;
+    });
+
+    return () => {
+      unsubscribe();
+      feedbackTimers.forEach(clearTimeout);
+      feedbackTimers.clear();
+    };
+  }, [store]);
+
+  const getExpectedNotes = useCallback((): {
+    notes: ExpectedNote[];
+    rhMidis: Set<number>;
+    totalCount: number;
+  } => {
+    const { selectedBars, measureIds, handMode } = store.getState();
+    const loopData = buildLoopData(measureIds, selectedBars);
+    if (!loopData) {
+      return { notes: [], rhMidis: new Set(), totalCount: 0 };
     }
 
-    // Filter by hand mode
-    const filtered = handMode === "both" ? allNotes
-      : handMode === "right" ? allNotes.filter((n) => rhMidis.has(n.midi))
-      : allNotes.filter((n) => !rhMidis.has(n.midi));
+    const filtered = handMode === "both"
+      ? loopData.allNotes
+      : handMode === "right"
+        ? loopData.rightHandNotes
+        : loopData.leftHandNotes;
 
-    return { notes: allNotes, rhMidis, totalCount: filtered.length };
+    return {
+      notes: loopData.allNotes,
+      rhMidis: loopData.allRightHandMidis,
+      totalCount: filtered.length,
+    };
   }, [store]);
 
   const onPlaybackTick = useCallback((positionMs: number) => {
@@ -130,7 +137,7 @@ export function usePracticeSession(
     }
   }, [noteOff, store]);
 
-  const onLoopComplete = useCallback(() => {
+  const onLoopComplete = useCallback((): LoopResult | null => {
     const {
       practiceMode, autoSpeedUp, tempo, targetTempo,
       isRecording, selectedBar, measureIds, selectedBars,
@@ -140,7 +147,7 @@ export function usePracticeSession(
 
     if (practiceMode === "free" && !isRecording) {
       evaluationsRef.current = [];
-      return;
+      return null;
     }
 
     const { totalCount } = getExpectedNotes();
@@ -180,6 +187,8 @@ export function usePracticeSession(
         resetGoodLoops();
       }
     }
+
+    return result;
   }, [store, getExpectedNotes, onStatsRecord]);
 
   return {

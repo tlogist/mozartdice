@@ -3,6 +3,7 @@
 import { useCallback, useRef } from "react";
 import { useAppStore } from "@/lib/state/useAppStore";
 import { getMeasureData } from "@/lib/mozart/measureData";
+import { getMeasureDurationMsFromNotes } from "@/lib/mozart/loopData";
 import type { ExpectedNote, PlayedNote } from "@/lib/domain/types";
 
 interface RecordingTimelineProps {
@@ -43,7 +44,7 @@ export default function RecordingTimeline({ onReplayNoteOn, onReplayNoteOff }: R
 
   // Calculate total duration for positioning
   const tempoScale = 60 / currentRecording.tempo;
-  const totalDuration = 3 * 1000 * tempoScale;
+  const totalDuration = getMeasureDurationMsFromNotes(refNotes) * tempoScale;
   const playedDuration = currentRecording.playedNotes.length > 0
     ? Math.max(...currentRecording.playedNotes.map((n) => n.releaseMs ?? n.timestampMs))
     : totalDuration;

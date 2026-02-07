@@ -2,12 +2,15 @@ import type { ExpectedNote, NoteEvaluation, LoopResult, HandMode, TimingJudgment
 
 export class PracticeEngine {
   /**
-   * Check if a MIDI note belongs to the hand being practiced.
-   * rightHandMidis contains all MIDI values that are right-hand notes for the current measure(s).
+   * Check if an expected note belongs to the hand being practiced.
+   * If note.hand is present, use it. Otherwise fallback to pitch-based set membership.
    */
-  static isRelevantHand(midi: number, handMode: HandMode, rightHandMidis: Set<number>): boolean {
+  static isRelevantHand(note: ExpectedNote, handMode: HandMode, rightHandMidis: Set<number>): boolean {
     if (handMode === "both") return true;
-    const isRight = rightHandMidis.has(midi);
+    if (note.hand) {
+      return handMode === note.hand;
+    }
+    const isRight = rightHandMidis.has(note.midi);
     return handMode === "right" ? isRight : !isRight;
   }
 
@@ -26,11 +29,11 @@ export class PracticeEngine {
   ): NoteEvaluation {
     // Find expected notes with matching MIDI pitch
     const candidates = expectedNotes.filter(
-      (n) => n.midi === midi && PracticeEngine.isRelevantHand(midi, handMode, rightHandMidis),
+      (n) => n.midi === midi && PracticeEngine.isRelevantHand(n, handMode, rightHandMidis),
     );
 
     if (candidates.length === 0) {
-      return { midi, matchedExpected: null, timing: "wrong", offsetMs: 0 };
+      return { midi, matchedExpected: null, matchedExpectedId: null, timing: "wrong", offsetMs: 0 };
     }
 
     // Find the closest expected note by scaled startMs
@@ -56,7 +59,13 @@ export class PracticeEngine {
       timing = "wrong";
     }
 
-    return { midi, matchedExpected: bestCandidate, timing, offsetMs: offset };
+    return {
+      midi,
+      matchedExpected: bestCandidate,
+      matchedExpectedId: bestCandidate.expectedId ?? null,
+      timing,
+      offsetMs: offset,
+    };
   }
 
   /**
@@ -67,18 +76,37 @@ export class PracticeEngine {
     let earlyCount = 0;
     let lateCount = 0;
     let wrongCount = 0;
+    const matchedIds = new Set<string>();
 
     for (const ev of evaluations) {
+      if (ev.timing === "wrong") {
+        wrongCount++;
+        continue;
+      }
+
+      if (!ev.matchedExpectedId || matchedIds.has(ev.matchedExpectedId)) {
+        // Repeated hits on the same expected note are treated as extra/wrong notes.
+        wrongCount++;
+        continue;
+      }
+
+      matchedIds.add(ev.matchedExpectedId);
+
       switch (ev.timing) {
-        case "perfect": perfectCount++; break;
-        case "early": earlyCount++; break;
-        case "late": lateCount++; break;
-        case "wrong": wrongCount++; break;
+        case "perfect":
+          perfectCount++;
+          break;
+        case "early":
+          earlyCount++;
+          break;
+        case "late":
+          lateCount++;
+          break;
       }
     }
 
-    const correctNotes = perfectCount + earlyCount + lateCount;
-    const missedCount = Math.max(0, totalExpectedCount - correctNotes);
+    const correctNotes = matchedIds.size;
+    const missedCount = Math.max(0, totalExpectedCount - matchedIds.size);
     const accuracyPercent = totalExpectedCount > 0
       ? Math.round((correctNotes / totalExpectedCount) * 100)
       : 0;

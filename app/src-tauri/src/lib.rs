@@ -4,6 +4,7 @@ mod midi;
 pub fn run() {
     tauri::Builder::default()
         .manage(midi::MidiState::new())
+        .invoke_handler(tauri::generate_handler![midi::midi_status])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

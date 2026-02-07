@@ -1,36 +1,33 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { SessionStatsManager } from "@/lib/engine/SessionStatsManager";
 import type { MeasureStats } from "@/lib/domain/types";
 
 export function useSessionStats() {
-  const managerRef = useRef<SessionStatsManager | null>(null);
-  const [allStats, setAllStats] = useState<MeasureStats[]>([]);
-
-  useEffect(() => {
+  const [manager] = useState(() => {
     const mgr = new SessionStatsManager();
     mgr.load();
-    managerRef.current = mgr;
-    setAllStats(mgr.getAllStats());
-  }, []);
+    return mgr;
+  });
+  const [allStats, setAllStats] = useState<MeasureStats[]>(() => manager.getAllStats());
 
   const recordAttempt = useCallback((measureId: number, accuracy: number, tempo: number) => {
-    managerRef.current?.recordAttempt(measureId, accuracy, tempo);
-    setAllStats(managerRef.current?.getAllStats() ?? []);
-  }, []);
+    manager.recordAttempt(measureId, accuracy, tempo);
+    setAllStats(manager.getAllStats());
+  }, [manager]);
 
   const getStats = useCallback((measureId: number) => {
-    return managerRef.current?.getStats(measureId);
-  }, []);
+    return manager.getStats(measureId);
+  }, [manager]);
 
   const getWeakMeasures = useCallback((threshold = 70) => {
-    return managerRef.current?.getWeakMeasures(threshold) ?? [];
-  }, []);
+    return manager.getWeakMeasures(threshold);
+  }, [manager]);
 
   const getRecommended = useCallback((allMeasureIds: number[], limit = 5) => {
-    return managerRef.current?.getRecommended(allMeasureIds, limit) ?? [];
-  }, []);
+    return manager.getRecommended(allMeasureIds, limit);
+  }, [manager]);
 
   return { allStats, recordAttempt, getStats, getWeakMeasures, getRecommended };
 }
