@@ -1,0 +1,207 @@
+{
+  "project": "Dice & Discipline",
+  "branchName": "ralph/v1-mozart-dice",
+  "description": "Mozart Dice Piano Tutor v1 - A systems-based musical training environment using Mozart's dice game principles to teach harmonic literacy, pattern recognition, and motor control",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold Next.js project with TypeScript and Tailwind",
+      "description": "As a developer, I need a working Next.js project scaffold so that all subsequent stories have a foundation to build on.",
+      "acceptanceCriteria": [
+        "Next.js app created with TypeScript, App Router, and Tailwind CSS",
+        "Project builds successfully with `npm run build`",
+        "Dev server starts with `npm run dev`",
+        "Root page renders a heading: 'Dice & Discipline'",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Completed: Next.js 16 with TypeScript, Tailwind v4, App Router, src directory"
+    },
+    {
+      "id": "US-002",
+      "title": "Add core domain types and data model",
+      "description": "As a developer, I need shared TypeScript types for Measure, Pattern, DiceRoll, and Exercise so that all modules use consistent contracts.",
+      "acceptanceCriteria": [
+        "Create /lib/domain/types.ts with Measure, Pattern, DiceRoll, Exercise, and ExpectedNote types",
+        "Measure has fields: id, type ('mozart'|'agitato'), rightHandPattern, leftHandPattern, harmonicFunction, difficulty",
+        "Pattern has fields: notes (number[]), fingering (number[]), shapeId (string)",
+        "DiceRoll has fields: die1 (number), die2 (number), sum (number)",
+        "Types are exported and importable from other modules",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed: types.ts at app/src/lib/domain/types.ts"
+    },
+    {
+      "id": "US-003",
+      "title": "Add Mozart dice lookup tables",
+      "description": "As a developer, I need the historical Mozart minuet and trio lookup tables so the dice engine can map rolls to measure IDs.",
+      "acceptanceCriteria": [
+        "Create /lib/mozart/mozartTables.ts",
+        "mozartMinuetTable is a 16x11 array (16 bars, dice sums 2-12 mapped to indices 0-10)",
+        "mozartTrioTable is a 16x11 array with the same structure",
+        "Tables contain historically accurate Mozart K.516f measure IDs",
+        "Index comments explain the bar/sum mapping",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add Mozart minuet generator with dice rolling",
+      "description": "As a developer, I need a function that takes 16 dice rolls and returns a 16-bar minuet composition by looking up the Mozart tables.",
+      "acceptanceCriteria": [
+        "Create /lib/mozart/generateMinuet.ts",
+        "rollDice() generates a random 2d6 roll returning a DiceRoll object",
+        "generateMinuet() accepts optional fixed rolls or generates random ones",
+        "Output is an array of 16 measure IDs looked up from mozartMinuetTable",
+        "Fixed dice input produces deterministic output",
+        "Invalid dice values (outside 1-6) throw descriptive errors",
+        "Unit tests cover deterministic output and error cases",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add Zustand state store for dice and exercise state",
+      "description": "As a developer, I need a global state store to hold the current dice rolls, selected measures, playback state, and tempo.",
+      "acceptanceCriteria": [
+        "Install zustand as a dependency",
+        "Create /lib/state/useAppStore.ts with Zustand store",
+        "Store holds: currentRolls (DiceRoll[]), measureIds (number[]), selectedBar (number|null), tempo (number), isPlaying (boolean)",
+        "Store has actions: rollAllDice, selectBar, setTempo, togglePlayback",
+        "rollAllDice generates 16 rolls and computes measureIds from Mozart tables",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add dice rolling UI with animation",
+      "description": "As a user, I want to click a 'Roll Dice' button and see animated dice that resolve to sums, so I can generate a new minuet.",
+      "acceptanceCriteria": [
+        "Roll Dice button is visible on the main page",
+        "Clicking it triggers dice animation (brief visual randomization before settling)",
+        "After animation, 16 dice sums (one per bar) are displayed",
+        "Dice results are stored in the Zustand store",
+        "Button can be clicked again to re-roll",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add 16-bar measure grid UI",
+      "description": "As a user, I want to see a grid of 16 bars showing the selected measure IDs after rolling dice, so I can visualize the generated minuet.",
+      "acceptanceCriteria": [
+        "After rolling dice, a 16-cell grid appears showing bar numbers 1-16",
+        "Each cell displays the measure ID selected by the dice for that bar",
+        "Clicking a bar cell selects it (visually highlighted)",
+        "Selected bar index is stored in the Zustand store",
+        "Grid is responsive and readable",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add visual piano keyboard component",
+      "description": "As a user, I want to see a visual piano keyboard on screen so I can see which notes are active or expected.",
+      "acceptanceCriteria": [
+        "Create /components/Keyboard/PianoKeyboard.tsx and /components/Keyboard/PianoKey.tsx",
+        "Keyboard renders MIDI notes 48-84 (3 octaves centered on middle C) by default",
+        "White and black keys are visually distinct with proper piano layout",
+        "Component accepts activeNotes prop (Set<number>) to highlight pressed keys in blue",
+        "Component accepts expectedNotes prop (number[]) to highlight target keys in green",
+        "Keys show note names (C, D, E, etc.) on white keys",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add placeholder measure data with note patterns",
+      "description": "As a developer, I need sample musical data for a subset of Mozart measure IDs so the app can display notes on the keyboard and play them back.",
+      "acceptanceCriteria": [
+        "Create /lib/mozart/measureData.ts",
+        "Define at least 12 sample measures with right-hand and left-hand note patterns",
+        "Each measure has an array of ExpectedNote objects with midi note numbers, startMs, and endMs",
+        "Each measure has a harmonicFunction label (e.g., 'I', 'V', 'IV')",
+        "Each measure has a brief teachingText explanation",
+        "Data is keyed by measure ID matching entries in mozartMinuetTable",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add tempo control slider",
+      "description": "As a user, I want a tempo slider so I can control the playback speed of the selected measure.",
+      "acceptanceCriteria": [
+        "Tempo slider is visible below the piano keyboard",
+        "Slider range is 40-120 BPM with default at 60 BPM",
+        "Current BPM value is displayed next to the slider",
+        "Changing the slider updates the tempo in the Zustand store",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add measure playback with looping",
+      "description": "As a user, I want to play back a selected measure and see expected notes highlighted on the keyboard in time, with looping support.",
+      "acceptanceCriteria": [
+        "Selecting a bar and clicking Play highlights expected notes on the keyboard in sequence",
+        "Notes highlight at the correct time based on their startMs/endMs scaled to current tempo",
+        "Playback loops automatically when it reaches the end of the measure",
+        "A Stop button stops playback and resets",
+        "Playback uses requestAnimationFrame or setTimeout for timing",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Add teaching overlay for selected bar",
+      "description": "As a user, I want to see teaching information when I select a bar, including the hand shape hint, harmonic function, and a short explanation.",
+      "acceptanceCriteria": [
+        "When a bar is selected, a panel appears showing teaching info for that measure",
+        "Panel displays: harmonic function label (e.g., 'I - Tonic')",
+        "Panel displays: a 1-2 sentence 'Why this works' explanation",
+        "Panel displays: fingering numbers for right hand",
+        "If no measure data exists for the ID, show 'Data not yet available'",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

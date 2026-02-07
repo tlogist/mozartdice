@@ -1,0 +1,31 @@
+## Codebase Patterns
+- Project root is `/mozartdice/`, Next.js app lives in `/mozartdice/app/`
+- Source code is in `app/src/` (using `--src-dir` flag)
+- App Router pages are at `app/src/app/`
+- Run builds/typechecks from `app/` directory: `cd app && npm run build`
+- Tailwind v4 is used (uses `@import "tailwindcss"` syntax, not v3 config)
+- New lib modules should go in `app/src/lib/`
+- New components should go in `app/src/components/`
+
+---
+
+## 2026-02-07 - US-001
+- Scaffolded Next.js 16.1.6 project with TypeScript, Tailwind CSS v4, App Router
+- Customized layout.tsx and page.tsx for "Dice & Discipline" branding
+- Files created: app/ directory with full Next.js scaffold
+- **Learnings for future iterations:**
+  - Next.js 16 uses Turbopack by default for builds
+  - Tailwind v4 uses `@import "tailwindcss"` instead of v3's `@tailwind` directives
+  - The `--src-dir` flag puts source in `app/src/` — all new files should go under `app/src/`
+  - Build warns about workspace root detection with multiple lockfiles — can be ignored
+---
+
+## 2026-02-07 - US-002
+- Created core domain types in app/src/lib/domain/types.ts
+- Types: Pattern, Measure, DiceRoll, ExpectedNote, Exercise
+- Files created: app/src/lib/domain/types.ts
+- **Learnings for future iterations:**
+  - All domain types live in `app/src/lib/domain/types.ts`
+  - Import from `@/lib/domain/types` (Next.js default `@` alias points to `src/`)
+---
+
