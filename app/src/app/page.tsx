@@ -8,13 +8,15 @@ import TempoSlider from "@/components/Tempo/TempoSlider";
 import PlaybackControls from "@/components/Playback/PlaybackControls";
 import TeachingPanel from "@/components/Teaching/TeachingPanel";
 import { useMidiInput } from "@/lib/hooks/useMidiInput";
+import { usePianoSynth } from "@/lib/hooks/usePianoSynth";
 
 export default function Home() {
   const [activeNotes, setActiveNotes] = useState<Set<number>>(new Set());
   const [expectedNotes, setExpectedNotes] = useState<number[]>([]);
   const [fingeringMap, setFingeringMap] = useState<Map<number, number>>(new Map());
   const [leftHandMidis, setLeftHandMidis] = useState<Set<number>>(new Set());
-  const { pressedNotes, isConnected } = useMidiInput();
+  const { noteOn, noteOff } = usePianoSynth();
+  const { pressedNotes, isConnected } = useMidiInput({ onNoteOn: noteOn, onNoteOff: noteOff });
 
   const handleActiveNotes = useCallback((notes: Set<number>) => {
     setActiveNotes(notes);
