@@ -48,6 +48,7 @@ interface AppState {
   advanceSightReading: (barResult: LoopResult) => void;
   finishSightReading: () => void;
   clearSightReading: () => void;
+  rollWithFixedMeasure: (measureId: number) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -173,4 +174,10 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   clearSightReading: () => set({ sightReadingSession: null, practiceMode: "free" }),
+
+  rollWithFixedMeasure: (measureId) => {
+    const { rolls, measureIds } = generateMinuet();
+    measureIds[0] = measureId;
+    set({ currentRolls: rolls, measureIds, selectedBar: 0, selectedBars: [0], isPlaying: false });
+  },
 }));
