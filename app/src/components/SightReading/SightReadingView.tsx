@@ -5,6 +5,7 @@ import type { SightReadingSession, LoopResult } from "@/lib/domain/types";
 import type { FeedbackColor } from "@/components/Keyboard/PianoKey";
 import StaffNotation from "@/components/StaffNotation/StaffNotation";
 import { getMeasureData } from "@/lib/mozart/measureData";
+import { useAppStore } from "@/lib/state/useAppStore";
 
 interface SightReadingViewProps {
   session: SightReadingSession;
@@ -55,11 +56,14 @@ export default function SightReadingView({
   onNewPiece,
   onClose,
 }: SightReadingViewProps) {
+  const selectedBar = useAppStore((s) => s.selectedBar);
+  const activeBarIndex = selectedBar ?? session.currentBarIndex;
+
   const currentMeasureData = useMemo(() => {
     if (session.isComplete) return null;
-    const mid = session.measureIds[session.currentBarIndex];
+    const mid = session.measureIds[activeBarIndex];
     return mid !== undefined ? getMeasureData(mid) : null;
-  }, [session.isComplete, session.measureIds, session.currentBarIndex]);
+  }, [session.isComplete, session.measureIds, activeBarIndex]);
   if (session.isComplete) {
     return (
       <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-lg border border-neutral-700 bg-neutral-900 p-6">
@@ -94,7 +98,7 @@ export default function SightReadingView({
     <div className="flex w-full flex-col items-center gap-2">
       <div className="flex items-center gap-4">
         <span className="text-sm font-medium text-neutral-400">
-          Bar {session.currentBarIndex + 1} of 16
+          Bar {activeBarIndex + 1} of 16
         </span>
         {countdown !== null && (
           <span className="text-3xl font-black text-amber-400 animate-pulse">{countdown}</span>
@@ -106,8 +110,8 @@ export default function SightReadingView({
           <StaffNotation
             rightHand={currentMeasureData.rightHand}
             leftHand={currentMeasureData.leftHand}
-            fingeringRight={currentMeasureData.fingeringRight}
-            fingeringLeft={currentMeasureData.fingeringLeft}
+            fingeringRight={[]}
+            fingeringLeft={[]}
             playbackPositionMs={playbackPositionMs}
             tempoScale={tempoScale}
             feedbackMap={feedbackMap}
@@ -125,7 +129,7 @@ export default function SightReadingView({
                 ? session.barResults[i]?.accuracyPercent >= 80
                   ? "bg-emerald-500"
                   : "bg-red-500"
-                : i === session.currentBarIndex
+                : i === activeBarIndex
                   ? "bg-amber-400"
                   : "bg-neutral-700"
             }`}

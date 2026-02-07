@@ -50,13 +50,45 @@ export function useSightReading() {
   ]);
 
   const onBarComplete = useCallback((barResult: LoopResult) => {
-    const session = useAppStore.getState().sightReadingSession;
+    const state = useAppStore.getState();
+    const session = state.sightReadingSession;
     if (!session || session.isComplete) return;
 
-    const isLast = session.currentBarIndex >= session.measureIds.length - 1;
-    advanceSightReading(barResult);
-    if (isLast) {
-      finishSightReading();
+    const sortedSelection = [...state.selectedBars].sort((a, b) => a - b);
+    const isDefaultAutoFlow =
+      sortedSelection.length === 1 && sortedSelection[0] === session.currentBarIndex;
+
+    if (isDefaultAutoFlow) {
+      const isLast = session.currentBarIndex >= session.measureIds.length - 1;
+      advanceSightReading(barResult);
+      if (isLast) {
+        finishSightReading();
+      }
+      return;
+    }
+
+    if (sortedSelection.length > 0) {
+      const current = state.selectedBar ?? sortedSelection[0];
+      const currentIdx = sortedSelection.indexOf(current);
+      const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % sortedSelection.length : 0;
+      const nextBar = sortedSelection[nextIdx];
+
+      useAppStore.setState((s) => {
+        if (!s.sightReadingSession || s.sightReadingSession.isComplete) return {};
+        const barResults = [...s.sightReadingSession.barResults, barResult];
+        const totalScore = Math.round(
+          barResults.reduce((sum, r) => sum + r.accuracyPercent, 0) / barResults.length,
+        );
+        return {
+          sightReadingSession: {
+            ...s.sightReadingSession,
+            currentBarIndex: nextBar,
+            barResults,
+            totalScore,
+          },
+          selectedBar: nextBar,
+        };
+      });
     }
   }, [advanceSightReading, finishSightReading]);
 

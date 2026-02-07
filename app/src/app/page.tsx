@@ -98,10 +98,10 @@ export default function Home() {
 
   const handleLoopBoundary = useCallback(() => {
     const result = onLoopComplete();
-    if (result && sightReadMode) {
+    if (result && sightReadMode && sightReadingSession) {
       onBarComplete(result);
     }
-  }, [onLoopComplete, sightReadMode, onBarComplete]);
+  }, [onLoopComplete, sightReadMode, onBarComplete, sightReadingSession]);
 
   const handleSelectMeasure = useCallback((measureId: number) => {
     const idx = measureIds.indexOf(measureId);
@@ -150,7 +150,7 @@ export default function Home() {
 
       {/* Main content */}
       <main className="flex min-w-0 flex-1 flex-col items-center gap-5 overflow-x-auto px-4 py-6">
-        {!sightReadMode && <MeasureGrid />}
+        <MeasureGrid />
 
         {/* Staff notation when a bar is selected */}
         {!sightReadMode && staffMeasureData && (
